@@ -189,6 +189,11 @@ function SuppliersPage() {
                         <span>Radius: <strong>{item.coverage_radius_km || 15} km</strong></span>
                       </div>
                       <div className="text-xs text-gray-400">{item.coverage_area_desc || 'Semua Wilayah'}</div>
+                      {item.latitude && item.longitude && (
+                        <div className="text-[10px] text-gray-400 font-mono mt-1">
+                          GPS: {item.latitude}, {item.longitude}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-xs">{item.contact_person}</td>
                     <td className="px-6 py-4 text-xs">{item.username}</td>

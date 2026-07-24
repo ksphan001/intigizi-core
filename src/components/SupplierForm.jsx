@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/api';
 
 // Formulir untuk menambah atau mengedit data supplier.
-
 function SupplierForm({ supplier, onSave, onCancel }) {
   const [formData, setFormData] = useState({
     supplier_name: '',
@@ -10,7 +9,9 @@ function SupplierForm({ supplier, onSave, onCancel }) {
     address: '',
     contact_person: '',
     coverage_radius_km: 15,
-    coverage_area_desc: ''
+    coverage_area_desc: '',
+    latitude: '',
+    longitude: ''
   });
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -37,7 +38,9 @@ function SupplierForm({ supplier, onSave, onCancel }) {
         address: supplier.address || '',
         contact_person: supplier.contact_person || '',
         coverage_radius_km: supplier.coverage_radius_km || 15,
-        coverage_area_desc: supplier.coverage_area_desc || ''
+        coverage_area_desc: supplier.coverage_area_desc || '',
+        latitude: supplier.latitude || '',
+        longitude: supplier.longitude || ''
       });
     }
   }, [supplier]);
@@ -61,47 +64,59 @@ function SupplierForm({ supplier, onSave, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-4">
-        <label htmlFor="supplier_name" className="block text-sm font-medium text-gray-700">Nama Supplier</label>
-        <input type="text" name="supplier_name" id="supplier_name" value={formData.supplier_name} onChange={handleChange} className="input-style" required />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="supplier_name" className="block text-sm font-semibold text-gray-700 mb-1">Nama Supplier</label>
+        <input type="text" name="supplier_name" id="supplier_name" value={formData.supplier_name} onChange={handleChange} className="input-style w-full" required />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="mb-4">
-          <label htmlFor="user_id" className="block text-sm font-medium text-gray-700">Akun User Terhubung</label>
-          <select name="user_id" id="user_id" value={formData.user_id} onChange={handleChange} className="input-style bg-white" required>
+        <div>
+          <label htmlFor="user_id" className="block text-sm font-semibold text-gray-700 mb-1">Akun User Terhubung</label>
+          <select name="user_id" id="user_id" value={formData.user_id} onChange={handleChange} className="input-style w-full bg-white" required>
             {supplier && <option value={supplier.user_id}>{supplier.username}</option>}
             {users.map(user => (
               <option key={user.id} value={user.id}>{user.full_name} ({user.username})</option>
             ))}
           </select>
         </div>
-        <div className="mb-4">
-          <label htmlFor="contact_person" className="block text-sm font-medium text-gray-700">Kontak Person</label>
-          <input type="text" name="contact_person" id="contact_person" value={formData.contact_person} onChange={handleChange} className="input-style" />
+        <div>
+          <label htmlFor="contact_person" className="block text-sm font-semibold text-gray-700 mb-1">Kontak Person</label>
+          <input type="text" name="contact_person" id="contact_person" value={formData.contact_person} onChange={handleChange} className="input-style w-full" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="mb-4 md:col-span-1">
-          <label htmlFor="coverage_radius_km" className="block text-sm font-medium text-gray-700">Radius Cakupan (km)</label>
-          <input type="number" name="coverage_radius_km" id="coverage_radius_km" value={formData.coverage_radius_km} onChange={handleChange} className="input-style" required min="1" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+        <div className="md:col-span-1">
+          <label htmlFor="coverage_radius_km" className="block text-sm font-semibold text-gray-700 mb-1 truncate" title="Radius Cakupan (km)">Radius Cakupan (km)</label>
+          <input type="number" name="coverage_radius_km" id="coverage_radius_km" value={formData.coverage_radius_km} onChange={handleChange} className="input-style w-full" required min="1" />
         </div>
-        <div className="mb-4 md:col-span-2">
-          <label htmlFor="coverage_area_desc" className="block text-sm font-medium text-gray-700">Deskripsi Wilayah Cakupan</label>
-          <input type="text" name="coverage_area_desc" id="coverage_area_desc" value={formData.coverage_area_desc} onChange={handleChange} className="input-style" placeholder="Cth: Kec. Sukadamai, Cihampelas" />
+        <div className="md:col-span-2">
+          <label htmlFor="coverage_area_desc" className="block text-sm font-semibold text-gray-700 mb-1 truncate" title="Wilayah Cakupan">Wilayah Cakupan</label>
+          <input type="text" name="coverage_area_desc" id="coverage_area_desc" value={formData.coverage_area_desc} onChange={handleChange} className="input-style w-full" placeholder="Cth: Kec. Sukadamai, Cihampelas" />
         </div>
       </div>
 
-      <div className="mb-4">
-        <label htmlFor="address" className="block text-sm font-medium text-gray-700">Alamat Lengkap</label>
-        <textarea name="address" id="address" value={formData.address} onChange={handleChange} rows="2" className="input-style"></textarea>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="latitude" className="block text-sm font-semibold text-gray-700 mb-1">Latitude (Koordinat)</label>
+          <input type="text" name="latitude" id="latitude" value={formData.latitude} onChange={handleChange} className="input-style w-full" placeholder="Cth: -6.175392" />
+        </div>
+        <div>
+          <label htmlFor="longitude" className="block text-sm font-semibold text-gray-700 mb-1">Longitude (Koordinat)</label>
+          <input type="text" name="longitude" id="longitude" value={formData.longitude} onChange={handleChange} className="input-style w-full" placeholder="Cth: 106.827153" />
+        </div>
       </div>
 
-      {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-      <div className="flex justify-end space-x-3">
-        <button type="button" onClick={onCancel} className="btn-secondary">Batal</button>
+      <div>
+        <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-1">Alamat Lengkap</label>
+        <textarea name="address" id="address" value={formData.address} onChange={handleChange} rows="2" className="input-style w-full"></textarea>
+      </div>
+
+      {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+      
+      <div className="flex justify-end space-x-3 pt-3 border-t">
+        <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors">Batal</button>
         <button type="submit" disabled={loading} className="btn-primary">
           {loading ? 'Menyimpan...' : 'Simpan'}
         </button>
