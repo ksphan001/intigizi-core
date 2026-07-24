@@ -27,14 +27,24 @@ export function AuthProvider({ children }) {
     fetchUserSession();
   }, [fetchUserSession]);
 
+  const [selectedSppgId, setSelectedSppgIdState] = useState(() => {
+    return localStorage.getItem('selectedSppgId') || 'all';
+  });
+
+  const setSelectedSppgId = useCallback((id) => {
+    setSelectedSppgIdState(id);
+    localStorage.setItem('selectedSppgId', id);
+  }, []);
+
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem('authToken');
+    localStorage.removeItem('selectedSppgId');
     window.location.href = '/login';
   }, []);
 
 
-  const value = { user, loading, logout, refreshUser: fetchUserSession };
+  const value = { user, loading, logout, refreshUser: fetchUserSession, selectedSppgId, setSelectedSppgId };
 
   return (
     <AuthContext.Provider value={value}>

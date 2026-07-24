@@ -5,7 +5,7 @@ import IngredientForm from '@/components/IngredientForm';
 import Modal from '@/components/Modal';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { useNotification } from '@/context/NotificationContext';
-import { Plus, Search, Loader2, Edit, Trash2, Library } from 'lucide-react';
+import { Plus, Search, Loader2, Edit, Trash2, Library, RefreshCw } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import MasterIngredientModal from '@/components/MasterIngredientModal';
 
@@ -21,6 +21,7 @@ function IngredientsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [isMasterModalOpen, setIsMasterModalOpen] = useState(false);
+    const [syncing, setSyncing] = useState(false);
     
     const [editingIngredient, setEditingIngredient] = useState(null);
     const [deletingIngredientId, setDeletingIngredientId] = useState(null);
@@ -84,6 +85,19 @@ function IngredientsPage() {
         }
     };
 
+    const handleSyncPrices = async () => {
+        setSyncing(true);
+        try {
+            const response = await apiClient.post('/ingredients_sync_master.php');
+            showNotification(response.data.message || 'Harga bahan baku berhasil diselaraskan.', 'success');
+            fetchIngredientsAndUnits();
+        } catch (error) {
+            showNotification(error.response?.data?.message || 'Gagal menyelaraskan harga bahan baku.', 'error');
+        } finally {
+            setSyncing(false);
+        }
+    };
+
     const handleDeleteRequest = (id) => {
         setDeletingIngredientId(id);
         setIsConfirmModalOpen(true);
@@ -125,6 +139,10 @@ function IngredientsPage() {
             <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
                 <PageHeader title="Manajemen Bahan Baku" />
                 <div className="flex space-x-2">
+                    <button onClick={handleSyncPrices} disabled={syncing || loading} className="btn-secondary">
+                        {syncing ? <Loader2 className="animate-spin mr-2" size={16} /> : <RefreshCw size={16} className="mr-2" />}
+                        Sync Harga Master
+                    </button>
                     <button onClick={() => setIsMasterModalOpen(true)} className="btn-secondary">
                         <Library size={16} className="mr-2" /> Tambah dari Pustaka
                     </button>

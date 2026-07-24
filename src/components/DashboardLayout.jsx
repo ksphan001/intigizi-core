@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import NotificationDropdown from "./NotificationDropdown";
 import apiClient from "@/services/api";
 import Modal from "./Modal";
+import SppgSwitcher from "./SppgSwitcher";
 
 // Komponen Modal khusus untuk langganan berakhir
 const SubscriptionExpiredModal = ({ isOpen }) => {
@@ -116,7 +117,7 @@ function DashboardLayout() {
 
   const showSubscriptionModal =
     user &&
-    !subscriptionExemptRoles.includes(user.role_id) && // Cek apakah peran BUKAN salah satu yang dikecualikan
+    !subscriptionExemptRoles.includes(Number(user.role_id)) && // Cek apakah peran BUKAN salah satu yang dikecualikan
     ["expired", "inactive"].includes(user.subscription_status) &&
     location.pathname !== "/app/subscription";
   // --- AKHIR PERBAIKAN ---
@@ -126,16 +127,17 @@ function DashboardLayout() {
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="flex justify-between items-center py-4 px-6 bg-white border-b border-gray-200">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="text-gray-500 focus:outline-none lg:hidden mr-4"
+              className="text-gray-500 focus:outline-none lg:hidden mr-2"
             >
               <Menu size={24} />
             </button>
             <h1 className="text-xl font-semibold text-gray-800">
               {getPageTitle()}
             </h1>
+            <SppgSwitcher />
           </div>
           <div className="flex items-center space-x-4">
             <div className="relative hidden md:block">

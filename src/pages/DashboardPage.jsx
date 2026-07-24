@@ -55,7 +55,7 @@ const StatCard = ({ icon, title, value, loading }) => (
 );
 
 function DashboardPage() {
-  const { user } = useAuth();
+  const { user, selectedSppgId } = useAuth();
   const navigate = useNavigate();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,15 +67,16 @@ function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      if (user.role_id === 8) navigate("/app/admin/dashboard");
-      else if (user.role_id === 5)
+      const roleId = Number(user.role_id);
+      if (roleId === 8) navigate("/app/admin/dashboard");
+      else if (roleId === 5)
         navigate(
           user.org_type === "Vendor"
             ? "/app/vendor/dashboard"
             : "/app/supplier/dashboard",
         );
-      else if (user.role_id === 9) navigate("/app/investor/dashboard");
-      else if (user.role_id === 10) navigate("/app/funding/dashboard");
+      else if (roleId === 9) navigate("/app/investor/dashboard");
+      else if (roleId === 10) navigate("/app/funding/dashboard");
     }
   }, [user, navigate]);
 
@@ -83,7 +84,11 @@ function DashboardPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const summaryRes = await apiClient.get("/dashboard_summary.php");
+        const params = {};
+        if (selectedSppgId) {
+          params.sppg_id = selectedSppgId;
+        }
+        const summaryRes = await apiClient.get("/dashboard_summary.php", { params });
         setSummary(summaryRes.data);
       } catch (err) {
         setError("Gagal memuat data dashboard.");
@@ -121,7 +126,7 @@ function DashboardPage() {
       }
     };
 
-    if (user && ![5, 8, 9, 10].includes(user.role_id)) {
+    if (user && ![5, 8, 9, 10].includes(Number(user.role_id))) {
       fetchData();
       fetchTracking();
       fetchCouriers();
@@ -130,7 +135,7 @@ function DashboardPage() {
     } else if (user) {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, selectedSppgId]);
 
   const formatCurrency = (value) =>
     new Intl.NumberFormat("id-ID", {
@@ -174,9 +179,38 @@ function DashboardPage() {
           100,
     [summary],
   );
+  const nutritionStatusData = useMemo(
+    () =>
+      summary && summary.nutritional_status_summary
+        ? [
+            {
+              name: "Sangat Kurus",
+              value: summary.nutritional_status_summary["Sangat Kurus"] || 0,
+            },
+            {
+              name: "Kurus",
+              value: summary.nutritional_status_summary["Kurus"] || 0,
+            },
+            {
+              name: "Normal",
+              value: summary.nutritional_status_summary["Normal"] || 0,
+            },
+            {
+              name: "Kelebihan BB",
+              value: summary.nutritional_status_summary["Kelebihan Berat Badan"] || 0,
+            },
+            {
+              name: "Obesitas",
+              value: summary.nutritional_status_summary["Obesitas"] || 0,
+            },
+          ].filter(item => item.value > 0)
+        : [],
+    [summary],
+  );
   const GIZINOW_COLORS = ["#8CC344", "#F28D35", "#269636", "#EF4444"]; // IntiGizi Colors
+  const NUTRITION_COLORS = ["#EF4444", "#F59E0B", "#10B981", "#3B82F6", "#8B5CF6"];
 
-  if (loading || !user || [5, 8, 9, 10].includes(user.role_id))
+  if (loading || !user || [5, 8, 9, 10].includes(Number(user.role_id)))
     return (
       <div className="text-center p-8">
         <Loader2 className="animate-spin text-intigizi-green" />
@@ -367,6 +401,49 @@ function DashboardPage() {
               </ResponsiveContainer>
             </div>
           </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 flex flex-col justify-center">
+            <h3 className="font-semibold text-gray-700 mb-1">
+              Status Gizi Penerima
+            </h3>
+            <p className="text-[10px] text-gray-400 mb-2">Berdasarkan klasifikasi BMI anak terdaftar</p>
+            <div className="h-48">
+              {nutritionStatusData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={nutritionStatusData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={60}
+                      paddingAngle={5}
+                    >
+                      {nutritionStatusData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={NUTRITION_COLORS[index % NUTRITION_COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={36}
+                      iconSize={10}
+                      wrapperStyle={{ fontSize: "10px" }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-xs text-gray-400 italic">
+                  Belum ada data status gizi
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -501,7 +578,12 @@ function DashboardPage() {
                         <p className="text-sm font-semibold text-gray-800 group-hover:text-intigizi-green transition-colors">
                           {point.name}
                         </p>
-                        <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">
+                        {selectedSppgId === "all" && point.organization_name && (
+                          <span className="inline-block mt-0.5 text-[10px] font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                            SPPG: {point.organization_name}
+                          </span>
+                        )}
+                        <p className="text-xs text-gray-500 line-clamp-2 mt-1">
                           {point.address}
                         </p>
                       </div>
@@ -536,7 +618,12 @@ function DashboardPage() {
                   <p className="font-semibold text-gray-800 text-sm">
                     {item.menu_name}
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  {selectedSppgId === "all" && item.organization_name && (
+                    <span className="inline-block text-[10px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded mt-0.5 font-medium">
+                      {item.organization_name}
+                    </span>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
                     {new Date(item.serving_date).toLocaleDateString("id-ID", {
                       weekday: "long",
                       day: "numeric",
@@ -568,9 +655,16 @@ function DashboardPage() {
                     key={item.ingredient_id}
                     className="flex justify-between items-center p-2 bg-red-50 rounded border border-red-100"
                   >
-                    <p className="text-xs font-medium text-red-800">
-                      {item.ingredient_name}
-                    </p>
+                    <div>
+                      <p className="text-xs font-medium text-red-800">
+                        {item.ingredient_name}
+                      </p>
+                      {selectedSppgId === "all" && item.organization_name && (
+                        <p className="text-[9px] text-gray-500 font-semibold mt-0.5">
+                          {item.organization_name}
+                        </p>
+                      )}
+                    </div>
                     <p className="text-xs font-bold text-red-600">
                       {parseFloat(item.current_quantity).toLocaleString(
                         "id-ID",

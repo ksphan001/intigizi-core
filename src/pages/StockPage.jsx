@@ -2,7 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import apiClient from "@/services/api";
 import PageHeader from "@/components/PageHeader.jsx";
 import Pagination from "@/components/Pagination.jsx";
-import { Search, Info } from "lucide-react";
+import Modal from "@/components/Modal.jsx";
+import { Search, Info, AlertTriangle, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -13,12 +16,48 @@ const ITEMS_PER_PAGE = 10;
 // melalui alur penyelesaian Purchase Order.
 
 function StockPage() {
+  const { user } = useAuth();
+  const { showNotification } = useNotification();
+
   const [stock, setStock] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Tab state: 'stock' or 'history'
+  const [activeTab, setActiveTab] = useState("stock");
+  const [historyData, setHistoryData] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // States for damaged stock report modal
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [reportData, setReportData] = useState({
+    quantity: "",
+    reason: "Busuk / Kadaluarsa",
+    notes: "",
+  });
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      setHistoryLoading(true);
+      const response = await apiClient.get("/stock_damaged_history.php");
+      setHistoryData(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      showNotification("Gagal memuat riwayat kerusakan stok.", "error");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [showNotification]);
+
+  useEffect(() => {
+    if (activeTab === "history") {
+      fetchHistory();
+    }
+  }, [activeTab, fetchHistory]);
 
   const fetchStock = useCallback(async () => {
     try {
@@ -26,15 +65,60 @@ function StockPage() {
       const response = await apiClient.get("/stock_get.php");
       setStock(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      setError("Gagal memuat data stok.");
+      showNotification("Gagal memuat data stok.", "error");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showNotification]);
 
   useEffect(() => {
     fetchStock();
   }, [fetchStock]);
+
+  const handleOpenReportModal = () => {
+    setSelectedItem(null);
+    setReportData({
+      quantity: "",
+      reason: "Busuk / Kadaluarsa",
+      notes: "",
+    });
+    setIsReportModalOpen(true);
+  };
+
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedItem) return;
+    
+    const qtyInput = parseFloat(reportData.quantity);
+    const maxQty = parseFloat(selectedItem.current_quantity) / parseFloat(selectedItem.conversion_factor || 1);
+    
+    if (isNaN(qtyInput) || qtyInput <= 0) {
+      showNotification("Jumlah penyusutan harus lebih besar dari 0.", "error");
+      return;
+    }
+    
+    if (qtyInput > maxQty) {
+      showNotification(`Jumlah penyusutan tidak boleh melebihi stok saat ini (${maxQty.toLocaleString("id-ID")} ${selectedItem.unit_symbol}).`, "error");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const response = await apiClient.post("/stock_report_damaged.php", {
+        ingredient_id: selectedItem.ingredient_id,
+        quantity: qtyInput,
+        reason: reportData.reason,
+        notes: reportData.notes,
+      });
+      showNotification(response.data.message || "Laporan berhasil disimpan.", "success");
+      setIsReportModalOpen(false);
+      fetchStock();
+    } catch (err) {
+      showNotification(err.response?.data?.message || "Gagal melaporkan bahan rusak.", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const filteredStock = useMemo(() => {
     if (!searchQuery) {
@@ -45,22 +129,36 @@ function StockPage() {
     );
   }, [stock, searchQuery]);
 
-  const totalPages = Math.ceil(filteredStock.length / ITEMS_PER_PAGE);
-  const paginatedStock = useMemo(() => {
+  const filteredHistory = useMemo(() => {
+    if (!searchQuery) {
+      return historyData;
+    }
+    return historyData.filter((item) =>
+      item.ingredient_name.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+  }, [historyData, searchQuery]);
+
+  const totalPages = Math.ceil(
+    (activeTab === "stock" ? filteredStock.length : filteredHistory.length) / ITEMS_PER_PAGE
+  );
+
+  const paginatedItems = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredStock.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [currentPage, filteredStock]);
+    return activeTab === "stock"
+      ? filteredStock.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+      : filteredHistory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [activeTab, currentPage, filteredStock, filteredHistory]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, activeTab]);
 
   if (error) return <div className="text-red-500 p-4">{error}</div>;
 
   return (
     <div>
       {/* Tombol "Tambah Stok" telah dihapus dari PageHeader */}
-      <PageHeader title="Stok Gudang" />
+      <PageHeader title="Stok Gudang & Penyusutan" />
 
       <div className="mb-6 bg-blue-50 border-l-4 border-intigizi-green text-blue-800 p-4 rounded-r-lg">
         <div className="flex">
@@ -70,19 +168,55 @@ function StockPage() {
           <div>
             <p className="font-bold">Informasi</p>
             <p className="text-sm">
-              Halaman ini menampilkan jumlah stok saat ini. Penambahan stok dari
-              pembelian sekarang dilakukan secara otomatis saat Anda
-              menyelesaikan sebuah Purchase Order.
+              Halaman ini menampilkan jumlah stok saat ini serta riwayat penyusutan/kerusakan bahan baku. 
+              Penambahan stok dari pembelian dilakukan secara otomatis melalui alur Purchase Order.
             </p>
           </div>
         </div>
+      </div>
+
+      {/* TABS & ACTION BUTTON */}
+      <div className="flex justify-between items-center border-b border-gray-200 mb-6 bg-white p-2 rounded-xl shadow-sm flex-wrap gap-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab("stock")}
+            className={`py-2 px-5 text-sm font-semibold rounded-lg transition-all ${
+              activeTab === "stock"
+                ? "bg-intigizi-green text-white shadow-sm"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Stok Saat Ini
+          </button>
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`py-2 px-5 text-sm font-semibold rounded-lg transition-all ${
+              activeTab === "history"
+                ? "bg-intigizi-green text-white shadow-sm"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Riwayat Bahan Rusak / Susut
+          </button>
+        </div>
+
+        {[2, 7].includes(Number(user?.role_id)) && (
+          <button
+            type="button"
+            onClick={handleOpenReportModal}
+            className="py-2 px-4 text-xs font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors flex items-center gap-1.5"
+          >
+            <AlertTriangle size={14} />
+            <span>Laporkan Bahan Rusak</span>
+          </button>
+        )}
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="mb-4 relative">
           <input
             type="text"
-            placeholder="Cari nama bahan..."
+            placeholder={activeTab === "stock" ? "Cari nama bahan baku..." : "Cari riwayat bahan..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input-style w-full pl-10"
@@ -93,9 +227,9 @@ function StockPage() {
           />
         </div>
 
-        {loading ? (
+        {loading || (activeTab === "history" && historyLoading) ? (
           <p>Memuat data...</p>
-        ) : (
+        ) : activeTab === "stock" ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-gray-500">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -112,8 +246,8 @@ function StockPage() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedStock.length > 0 ? (
-                  paginatedStock.map((item) => (
+                {paginatedItems.length > 0 ? (
+                  paginatedItems.map((item) => (
                     <tr
                       key={item.ingredient_id}
                       className="bg-white border-b hover:bg-gray-50"
@@ -153,6 +287,61 @@ function StockPage() {
               </tbody>
             </table>
           </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-500">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3">
+                    Tanggal Laporan
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    Nama Bahan
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    Kuantitas Rusak
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    Keterangan
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right">
+                    Taksiran Kerugian (IDR)
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedItems.length > 0 ? (
+                  paginatedItems.map((item) => (
+                    <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        {new Date(item.date).toLocaleString("id-ID")}
+                      </td>
+                      <th scope="row" className="px-6 py-4 font-medium text-gray-900">
+                        {item.ingredient_name}
+                      </th>
+                      <td className="px-6 py-4 font-semibold text-red-600">
+                        -{parseFloat(item.quantity).toLocaleString("id-ID")} {item.unit_symbol}
+                      </td>
+                      <td className="px-6 py-4 text-xs max-w-xs truncate" title={item.reason_and_notes}>
+                        {item.reason_and_notes}
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold text-gray-900">
+                        {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(item.loss_value)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center py-4">
+                      {searchQuery
+                        ? "Tidak ada riwayat kerusakan bahan yang cocok."
+                        : "Belum ada riwayat laporan bahan rusak."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <Pagination
@@ -161,6 +350,128 @@ function StockPage() {
           onPageChange={setCurrentPage}
         />
       </div>
+
+      <Modal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        title="Laporkan Bahan Rusak / Penyusutan"
+        size="md"
+      >
+        <form onSubmit={handleReportSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-600 uppercase mb-1">
+              Pilih Bahan Baku
+            </label>
+            <select
+              value={selectedItem?.ingredient_id || ""}
+              onChange={(e) => {
+                const ingId = Number(e.target.value);
+                const found = stock.find((item) => Number(item.ingredient_id) === ingId);
+                setSelectedItem(found || null);
+              }}
+              className="input-style w-full"
+              required
+            >
+              <option value="" disabled>-- Pilih Bahan Baku --</option>
+              {stock.map((item) => (
+                <option key={item.ingredient_id} value={item.ingredient_id}>
+                  {item.ingredient_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedItem && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase mb-1">
+                    Stok Saat Ini
+                  </label>
+                  <input
+                    type="text"
+                    value={`${(parseFloat(selectedItem.current_quantity) / parseFloat(selectedItem.conversion_factor || 1)).toLocaleString("id-ID")} ${selectedItem.unit_symbol}`}
+                    disabled
+                    className="input-style w-full bg-gray-100 text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase mb-1">
+                    Jumlah Rusak/Susut
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      value={reportData.quantity}
+                      onChange={(e) => setReportData((prev) => ({ ...prev, quantity: e.target.value }))}
+                      placeholder="0.00"
+                      required
+                      className="input-style w-full pr-12"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-semibold">
+                      {selectedItem.unit_symbol}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">
+                  Alasan / Kategori Kerusakan
+                </label>
+                <select
+                  value={reportData.reason}
+                  onChange={(e) => setReportData((prev) => ({ ...prev, reason: e.target.value }))}
+                  className="input-style w-full"
+                  required
+                >
+                  <option value="Busuk / Kadaluarsa">Busuk / Kadaluarsa</option>
+                  <option value="Tumpah / Rusak Fisik">Tumpah / Rusak Fisik</option>
+                  <option value="Hilang / Selisih Opname">Hilang / Selisih Opname</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase mb-1">
+                  Catatan Tambahan
+                </label>
+                <textarea
+                  value={reportData.notes}
+                  onChange={(e) => setReportData((prev) => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Tuliskan keterangan detail di sini..."
+                  className="input-style w-full h-20 py-2"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="pt-4 border-t flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(false)}
+              className="px-4 py-2 bg-gray-150 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={actionLoading || !selectedItem}
+              className="btn-primary bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {actionLoading ? (
+                <>
+                  <Loader2 className="animate-spin mr-2" size={16} /> Menyimpan...
+                </>
+              ) : (
+                "Laporkan Rusak"
+              )}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

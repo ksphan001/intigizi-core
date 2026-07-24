@@ -486,15 +486,15 @@ function ProposalDetailPage() {
 
   const canEditDraft =
     user &&
-    (user.role_id === ROLES.KEPALA_DAPUR ||
-      user.role_id === ROLES.ADMINISTRATOR);
+    (Number(user.role_id) === ROLES.KEPALA_DAPUR ||
+      Number(user.role_id) === ROLES.ADMINISTRATOR);
   const canApprove =
     user &&
-    (user.role_id === ROLES.YAYASAN || user.role_id === ROLES.ADMINISTRATOR);
+    (Number(user.role_id) === ROLES.YAYASAN || Number(user.role_id) === ROLES.ADMINISTRATOR);
   const canEditApproved =
     user &&
     [ROLES.KEPALA_DAPUR, ROLES.AKUNTAN, ROLES.ADMINISTRATOR].includes(
-      user.role_id,
+      Number(user.role_id),
     );
   const isEditable =
     canEditDraft ||

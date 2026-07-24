@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "switch:local": "node switch-env.cjs local",
+    "switch:deploy": "node switch-env.cjs deploy"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.7",

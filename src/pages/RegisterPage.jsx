@@ -137,7 +137,7 @@ const MitraForm = ({
   );
 
   const availableRegencies = useMemo(
-    () => regions.regencies[formData.province_id] || [],
+    () => regions.regencies?.[formData.province_id] || [],
     [formData.province_id, regions.regencies],
   );
 
@@ -145,7 +145,7 @@ const MitraForm = ({
   useEffect(() => {
     if (
       formData.province_id &&
-      !availableRegencies.map((r) => r.id).includes(formData.regency_id)
+      !availableRegencies?.map((r) => r.id)?.includes(formData.regency_id)
     ) {
       setFormData((prev) => ({ ...prev, regency_id: "" }));
     }
@@ -220,7 +220,7 @@ const MitraForm = ({
               error={validationErrors.province_id}
             >
               <option value="">Pilih Provinsi</option>
-              {regions.provinces.map((p) => (
+              {regions.provinces?.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -235,7 +235,7 @@ const MitraForm = ({
               disabled={!formData.province_id}
             >
               <option value="">Pilih Kabupaten/Kota</option>
-              {availableRegencies.map((r) => (
+              {availableRegencies?.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
                 </option>
@@ -247,7 +247,7 @@ const MitraForm = ({
 
       <div className="p-6 bg-white rounded-lg shadow-md border border-gray-100">
         <h3 className="text-xl font-semibold mb-4 text-gray-800">
-          3. Akun Administrator Dapur
+          3. Akun Pengelola Yayasan (Utama)
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -315,7 +315,7 @@ const MitraForm = ({
         {loading ? (
           <Loader2 className="animate-spin" />
         ) : (
-          "Daftarkan Mitra Dapur"
+          "Daftarkan Yayasan & Dapur Utama"
         )}
       </button>
     </form>
@@ -354,14 +354,14 @@ const VendorForm = ({
   );
 
   const availableRegencies = useMemo(
-    () => regions.regencies[formData.province_id] || [],
+    () => regions.regencies?.[formData.province_id] || [],
     [formData.province_id, regions.regencies],
   );
 
   useEffect(() => {
     if (
       formData.province_id &&
-      !availableRegencies.map((r) => r.id).includes(formData.regency_id)
+      !availableRegencies?.map((r) => r.id)?.includes(formData.regency_id)
     ) {
       setFormData((prev) => ({ ...prev, regency_id: "" }));
     }
@@ -394,7 +394,7 @@ const VendorForm = ({
             error={validationErrors.vendor_category_id}
           >
             <option value="">Pilih Kategori</option>
-            {vendorCategories.map((c) => (
+            {vendorCategories?.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
@@ -432,7 +432,7 @@ const VendorForm = ({
               error={validationErrors.province_id}
             >
               <option value="">Pilih Provinsi</option>
-              {regions.provinces.map((p) => (
+              {regions.provinces?.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -447,7 +447,7 @@ const VendorForm = ({
               disabled={!formData.province_id}
             >
               <option value="">Pilih Kabupaten/Kota</option>
-              {availableRegencies.map((r) => (
+              {availableRegencies?.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
                 </option>
@@ -730,7 +730,7 @@ const InvestorForm = ({
 
 // Halaman Registrasi Utama
 function RegisterPage() {
-  const [registrationType, setRegistrationType] = useState("Mitra Dapur");
+  const [registrationType, setRegistrationType] = useState("Yayasan / Pengelola SPPG");
   const [regions, setRegions] = useState({ provinces: [], regencies: {} });
   const [vendorCategories, setVendorCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -763,7 +763,7 @@ function RegisterPage() {
     regency_id: "",
     latitude: DEFAULT_POSITION.lat,
     longitude: DEFAULT_POSITION.lng,
-    registration_type: "Mitra Dapur",
+    registration_type: "Yayasan / Pengelola SPPG",
   });
 
   // Mengambil data wilayah & kategori vendor saat komponen dimuat
@@ -840,7 +840,7 @@ function RegisterPage() {
       let targetRoute = "/login"; // Default
       let autoLogin = false;
 
-      if (registrationType === "Mitra Dapur") {
+      if (registrationType === "Yayasan / Pengelola SPPG") {
         response = await apiClient.post("/register_organization.php", formData);
       } else if (registrationType === "Vendor") {
         response = await apiClient.post("/register_vendor.php", formData);
@@ -880,11 +880,10 @@ function RegisterPage() {
 
   // Opsi Tipe Registrasi
   const registrationOptions = [
-    // PERUBAHAN: Teks 'IntiGizi' diubah ke 'SolusiMBG'
     {
-      type: "Mitra Dapur",
+      type: "Yayasan / Pengelola SPPG",
       icon: <Building size={24} />,
-      desc: "Daftarkan dapur Anda untuk dikelola oleh platform IntiGizi.",
+      desc: "Daftarkan Yayasan Anda untuk mengelola dan memantau unit-unit dapur SPPG di bawahnya.",
     },
     {
       type: "Vendor",
@@ -905,7 +904,7 @@ function RegisterPage() {
 
   const renderForm = () => {
     switch (registrationType) {
-      case "Mitra Dapur":
+      case "Yayasan / Pengelola SPPG":
         return (
           <MitraForm
             formData={formData}

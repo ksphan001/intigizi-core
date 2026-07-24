@@ -195,7 +195,7 @@ function DistributionReportsPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Laporan Distribusi</h1>
+        <PageHeader title="Laporan Distribusi" />
 
         <div className="flex items-center space-x-4">
           <button

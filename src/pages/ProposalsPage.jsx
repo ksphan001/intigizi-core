@@ -129,7 +129,7 @@ function ProposalsPage() {
   };
   
   // Peran yang diizinkan untuk mengedit
-  const canEdit = user && [2, 3, 7].includes(user.role_id); // Kepala Dapur, Akuntan, Admin
+  const canEdit = user && [2, 3, 7].includes(Number(user.role_id)); // Kepala Dapur, Akuntan, Admin
 
   if (error) return <div className="text-red-500 p-4">{error}</div>;
 

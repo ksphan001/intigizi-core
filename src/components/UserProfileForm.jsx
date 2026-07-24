@@ -4,7 +4,9 @@ function UserProfileForm({ profile, onSave, loading }) {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    password: ''
+    password: '',
+    str_number: '',
+    str_expiry: ''
   });
 
   useEffect(() => {
@@ -12,7 +14,9 @@ function UserProfileForm({ profile, onSave, loading }) {
       setFormData({
         full_name: profile.full_name || '',
         email: profile.email || '',
-        password: '' // Selalu kosongkan password
+        password: '',
+        str_number: profile.str_number || '',
+        str_expiry: profile.str_expiry || ''
       });
     }
   }, [profile]);
@@ -41,6 +45,20 @@ function UserProfileForm({ profile, onSave, loading }) {
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
         <input type="email" name="email" id="email" value={formData.email} onChange={handleChange} className="input-style" required />
       </div>
+      
+      {Number(profile.role_id) === 1 && (
+        <>
+          <div className="mb-4">
+            <label htmlFor="str_number" className="block text-sm font-medium text-gray-700">Nomor STR (Surat Tanda Registrasi)</label>
+            <input type="text" name="str_number" id="str_number" value={formData.str_number} onChange={handleChange} className="input-style" required placeholder="Contoh: 12345-67890" />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="str_expiry" className="block text-sm font-medium text-gray-700">Masa Berlaku STR</label>
+            <input type="date" name="str_expiry" id="str_expiry" value={formData.str_expiry} onChange={handleChange} className="input-style" required />
+          </div>
+        </>
+      )}
+
       <div className="mb-6">
         <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password Baru</label>
         <input type="password" name="password" id="password" value={formData.password} onChange={handleChange} className="input-style" placeholder="Kosongkan jika tidak ingin diubah" />

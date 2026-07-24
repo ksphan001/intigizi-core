@@ -51,6 +51,7 @@ import ProductionTasksPage from './pages/ProductionTasksPage.jsx';
 import VolunteersPage from './pages/VolunteersPage.jsx';
 import FundingApplicationPage from './pages/FundingApplicationPage.jsx';
 import QuickDistributionPage from './pages/QuickDistributionPage.jsx';
+import ManageSppgPage from './pages/ManageSppgPage.jsx';
 
 // Laporan
 import DistributionPerformancePage from './pages/Reports/DistributionPerformancePage.jsx';
@@ -169,6 +170,7 @@ function App() {
           <Route path="volunteers" element={<VolunteersPage />} />
           <Route path="funding/apply" element={<FundingApplicationPage />} />
           <Route path="funding/dashboard" element={<CalonMitraDashboardPage />} />
+          <Route path="manage-sppgs" element={<ManageSppgPage />} />
 
           <Route path="financials/journal" element={<JournalPage />} />
           <Route path="financials/honorarium" element={<HonorariumPage />} />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import PageHeader from "@/components/PageHeader.jsx";
 import { Link } from "react-router-dom";
 import apiClient from "@/services/api";
 import { useNotification } from "@/context/NotificationContext";
@@ -141,7 +142,7 @@ function FinancialReportPage() {
   return (
     <div className="selection:bg-intigizi-green-light selection:text-intigizi-green-dark">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-gray-800">Laporan Keuangan</h1>
+        <PageHeader title="Laporan Keuangan" />
         <div className="flex items-center space-x-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
           <input
             type="date"

@@ -125,7 +125,7 @@ function Sidebar({ isOpen, setIsOpen }) {
 
   const hasAccess = (allowedRoles) => {
     if (!user) return false;
-    return allowedRoles.includes(user.role_id);
+    return allowedRoles.includes(Number(user.role_id));
   };
 
   const renderLink = (to, Icon, text) => (
@@ -161,13 +161,13 @@ function Sidebar({ isOpen, setIsOpen }) {
     );
   };
 
-  const isSuperAdmin = user && user.role_id === ROLES.SUPER_ADMIN;
+  const isSuperAdmin = user && Number(user.role_id) === ROLES.SUPER_ADMIN;
   const isExternalVendor =
-    user && user.role_id === ROLES.SUPPLIER && user.org_type === "Vendor";
+    user && Number(user.role_id) === ROLES.SUPPLIER && user.org_type === "Vendor";
   const isInternalSupplier =
-    user && user.role_id === ROLES.SUPPLIER && user.org_type !== "Vendor";
-  const isCalonMitra = user && user.role_id === ROLES.CALON_MITRA;
-  const isInvestor = user && user.role_id === ROLES.INVESTOR;
+    user && Number(user.role_id) === ROLES.SUPPLIER && user.org_type !== "Vendor";
+  const isCalonMitra = user && Number(user.role_id) === ROLES.CALON_MITRA;
+  const isInvestor = user && Number(user.role_id) === ROLES.INVESTOR;
 
   const isKitchenManagement =
     user &&
@@ -200,6 +200,7 @@ function Sidebar({ isOpen, setIsOpen }) {
           <nav className="space-y-4">
             {/* --- DASHBOARD STANDALONE (SELALU MUNCUL DI ATAS UNTUK AKSES CEPAT) --- */}
             {isKitchenManagement && renderLink("/app/dashboard", Home, "Dashboard")}
+            {hasAccess([ROLES.YAYASAN]) && renderLink("/app/manage-sppgs", Building, "Manajemen SPPG")}
             {isSuperAdmin && (
               <>
                 {renderLink("/app/admin/dashboard", LayoutDashboard, "Dasbor Admin")}
@@ -208,7 +209,7 @@ function Sidebar({ isOpen, setIsOpen }) {
             )}
 
             {/* --- MENU PERAN DENGAN JUMLAH LINK SEDIKIT (SELALU TERBUKA/TIDAK PERLU COLLAPSE) --- */}
-            {isCalonMitra && (
+            {(isCalonMitra || hasAccess([ROLES.YAYASAN])) && (
               <div className="space-y-1">
                 <div className="px-3 py-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider">
                   Pengajuan Kemitraan
@@ -342,11 +343,13 @@ function Sidebar({ isOpen, setIsOpen }) {
                     </>
                   ))}
 
-                {hasAccess([ROLES.ADMINISTRATOR]) &&
+                {hasAccess([ROLES.ADMINISTRATOR, ROLES.YAYASAN]) &&
                   renderCategory("administrasi", "Administrasi", (
                     <>
-                      {renderLink("/app/users", Users, "Manajemen Pengguna")}
-                      {renderLink("/app/kitchen-gallery", GalleryVertical, "Galeri Dapur")}
+                      {hasAccess([ROLES.ADMINISTRATOR, ROLES.YAYASAN]) &&
+                        renderLink("/app/users", Users, "Manajemen Pengguna")}
+                      {hasAccess([ROLES.ADMINISTRATOR]) &&
+                        renderLink("/app/kitchen-gallery", GalleryVertical, "Galeri Dapur")}
                       {renderLink("/app/settings", Settings, "Pengaturan")}
                     </>
                   ))}

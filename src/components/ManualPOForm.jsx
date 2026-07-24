@@ -14,6 +14,9 @@ function ManualPOForm({ onSave, onCancel, loading }) {
 
   const [error, setError] = useState("");
 
+  const [applyPPN, setApplyPPN] = useState(false);
+  const [applyPPh, setApplyPPh] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -83,8 +86,19 @@ function ManualPOForm({ onSave, onCancel, loading }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    
+    const tax_ppn = applyPPN ? Math.round(totalAmount * 0.11) : 0;
+    const tax_pph = applyPPh ? Math.round(totalAmount * 0.015) : 0;
+    const net_amount = totalAmount + tax_ppn - tax_pph;
+
     try {
-      await onSave({ supplier_id: supplierId, items });
+      await onSave({ 
+        supplier_id: supplierId, 
+        items,
+        tax_ppn,
+        tax_pph,
+        net_amount
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Gagal menyimpan PO.");
     }
@@ -205,12 +219,52 @@ function ManualPOForm({ onSave, onCancel, loading }) {
         </button>
       </div>
 
-      <div className="mt-6 pt-4 border-t flex justify-end items-center font-semibold">
-        {/* PERUBAHAN: Warna teks diubah */}
-        Total:{" "}
-        <span className="ml-2 text-xl text-intigizi-orange">
-          {formatCurrency(totalAmount)}
-        </span>
+      {/* Opsi Pajak */}
+      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mt-4 space-y-3">
+        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Perpajakan (Juknis BGN)</h4>
+        <div className="flex gap-6">
+          <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={applyPPN} 
+              onChange={(e) => setApplyPPN(e.target.checked)} 
+              className="rounded text-intigizi-green focus:ring-intigizi-green"
+            />
+            <span>Terapkan PPN (11%)</span>
+          </label>
+
+          <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={applyPPh} 
+              onChange={(e) => setApplyPPh(e.target.checked)} 
+              className="rounded text-intigizi-green focus:ring-intigizi-green"
+            />
+            <span>Terapkan PPh 22 (1.5%)</span>
+          </label>
+        </div>
+      </div>
+
+      <div className="mt-6 pt-4 border-t space-y-1.5 text-right font-medium">
+        <div className="text-sm text-gray-500">
+          DPP (Nilai Bersih Bahan): <span className="ml-2 font-semibold text-gray-700">{formatCurrency(totalAmount)}</span>
+        </div>
+        {applyPPN && (
+          <div className="text-sm text-gray-500">
+            PPN (11%): <span className="ml-2 font-semibold text-blue-600">+{formatCurrency(Math.round(totalAmount * 0.11))}</span>
+          </div>
+        )}
+        {applyPPh && (
+          <div className="text-sm text-gray-500">
+            PPh 22 (1.5%): <span className="ml-2 font-semibold text-red-600">-{formatCurrency(Math.round(totalAmount * 0.015))}</span>
+          </div>
+        )}
+        <div className="text-lg font-bold text-gray-800 pt-1 border-t border-gray-150 inline-block">
+          Total Bayar:{" "}
+          <span className="ml-2 text-xl text-intigizi-orange">
+            {formatCurrency(totalAmount + (applyPPN ? Math.round(totalAmount * 0.11) : 0) - (applyPPh ? Math.round(totalAmount * 0.015) : 0))}
+          </span>
+        </div>
       </div>
 
       {error && (
