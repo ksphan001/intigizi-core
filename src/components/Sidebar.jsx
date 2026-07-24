@@ -325,20 +325,21 @@ function Sidebar({ isOpen, setIsOpen }) {
                   ROLES.AKUNTAN,
                   ROLES.KEPALA_DAPUR,
                   ROLES.ADMINISTRATOR,
+                  ROLES.SUPER_ADMIN,
                 ]) &&
                   renderCategory("database", "Data Master", (
                     <>
-                      {hasAccess([ROLES.AHLI_GIZI, ROLES.ADMINISTRATOR]) &&
+                      {hasAccess([ROLES.AHLI_GIZI, ROLES.ADMINISTRATOR, ROLES.SUPER_ADMIN]) &&
                         renderLink("/app/menus", BookCopy, "Menu & Resep")}
-                      {hasAccess([ROLES.AHLI_GIZI, ROLES.KEPALA_DAPUR, ROLES.ADMINISTRATOR]) &&
+                      {hasAccess([ROLES.AHLI_GIZI, ROLES.KEPALA_DAPUR, ROLES.ADMINISTRATOR, ROLES.SUPER_ADMIN]) &&
                         renderLink("/app/ingredients", Utensils, "Bahan Baku")}
-                      {hasAccess([ROLES.AKUNTAN, ROLES.ADMINISTRATOR]) &&
+                      {hasAccess([ROLES.AKUNTAN, ROLES.ADMINISTRATOR, ROLES.SUPER_ADMIN]) &&
                         renderLink("/app/suppliers", Truck, "Supplier")}
-                      {hasAccess([ROLES.KEPALA_DAPUR, ROLES.ADMINISTRATOR]) &&
+                      {hasAccess([ROLES.KEPALA_DAPUR, ROLES.ADMINISTRATOR, ROLES.SUPER_ADMIN]) &&
                         renderLink("/app/distribution-points", MapPin, "Titik Distribusi")}
-                      {hasAccess([ROLES.KEPALA_DAPUR, ROLES.ADMINISTRATOR]) &&
+                      {hasAccess([ROLES.KEPALA_DAPUR, ROLES.ADMINISTRATOR, ROLES.SUPER_ADMIN]) &&
                         renderLink("/app/beneficiaries", Users, "Penerima Manfaat")}
-                      {hasAccess([ROLES.KEPALA_DAPUR, ROLES.ADMINISTRATOR]) &&
+                      {hasAccess([ROLES.KEPALA_DAPUR, ROLES.ADMINISTRATOR, ROLES.SUPER_ADMIN]) &&
                         renderLink("/app/volunteers", Users2, "Sukarelawan")}
                     </>
                   ))}
