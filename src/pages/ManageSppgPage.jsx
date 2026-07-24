@@ -4,6 +4,7 @@ import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import { Loader2, Plus, CheckCircle, XCircle, Building2, User, Phone, Calendar, Mail, Lock, MapPin, Edit } from "lucide-react";
 import { useNotification } from "@/context/NotificationContext";
+import MapDisplayModal from "@/components/MapDisplayModal.jsx";
 
 function ManageSppgPage() {
   const [sppgs, setSppgs] = useState([]);
@@ -12,6 +13,11 @@ function ManageSppgPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingSppgId, setEditingSppgId] = useState(null);
+  
+  // States for Map display
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [selectedPoint, setSelectedPoint] = useState(null);
+
   const { showNotification } = useNotification();
 
   // Region dropdown data
@@ -122,6 +128,16 @@ function ManageSppgPage() {
     setIsModalOpen(true);
   };
 
+  const openMapModal = (sppg) => {
+    setSelectedPoint({
+      name: sppg.name,
+      latitude: sppg.latitude,
+      longitude: sppg.longitude,
+      address: sppg.address
+    });
+    setIsMapModalOpen(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setActionLoading(true);
@@ -212,14 +228,27 @@ function ManageSppgPage() {
                   <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Unit Dapur</span>
                   <span className="text-sm font-bold text-intigizi-green bg-intigizi-green-light px-3 py-1 rounded-lg">Trial</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => openEditModal(sppg)}
-                  className="flex items-center space-x-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200"
-                >
-                  <Edit size={12} />
-                  <span>Edit Unit</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  {sppg.latitude && sppg.longitude && (
+                    <button
+                      type="button"
+                      onClick={() => openMapModal(sppg)}
+                      className="flex items-center space-x-1 text-xs font-bold text-green-600 hover:text-green-800 transition-colors bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg border border-green-200"
+                      title="Lihat Titik Peta"
+                    >
+                      <MapPin size={12} />
+                      <span>Peta</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(sppg)}
+                    className="flex items-center space-x-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200"
+                  >
+                    <Edit size={12} />
+                    <span>Edit Unit</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -303,6 +332,31 @@ function ManageSppgPage() {
               required
               placeholder="Tuliskan alamat lengkap jalan, nomor, RT/RW, kelurahan/desa, kecamatan..."
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Latitude (Koordinat)</label>
+              <input
+                type="text"
+                name="latitude"
+                value={formData.latitude}
+                onChange={handleInputChange}
+                className="input-field w-full"
+                placeholder="Cth: -7.013100"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Longitude (Koordinat)</label>
+              <input
+                type="text"
+                name="longitude"
+                value={formData.longitude}
+                onChange={handleInputChange}
+                className="input-field w-full"
+                placeholder="Cth: 110.429547"
+              />
+            </div>
           </div>
 
           <h4 className="text-sm font-bold text-gray-700 uppercase border-b pb-1 pt-2">3. Kontak PIC (Penanggung Jawab)</h4>
@@ -397,6 +451,12 @@ function ManageSppgPage() {
           </div>
         </form>
       </Modal>
+
+      <MapDisplayModal
+        isOpen={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        point={selectedPoint}
+      />
     </div>
   );
 }
