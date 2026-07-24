@@ -7,6 +7,7 @@ import ConfirmationModal from '@/components/ConfirmationModal.jsx';
 import Pagination from '@/components/Pagination.jsx';
 import { Edit, Trash2, Search, BookOpen, Truck, Loader2, Plus } from 'lucide-react';
 import { useNotification } from '@/context/NotificationContext';
+import SearchableSelect from '@/components/SearchableSelect.jsx';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -176,6 +177,13 @@ function SuppliersPage() {
     );
   }, [allIngredients, catalogItems]);
 
+  const ingredientOptions = useMemo(() => {
+    return availableIngredients.map(ing => ({
+      value: ing.ingredient_id,
+      label: ing.ingredient_name
+    }));
+  }, [availableIngredients]);
+
   if (error && !isCatalogModalOpen) return <div className="text-red-500 p-4">{error}</div>;
 
   return (
@@ -283,21 +291,15 @@ function SuppliersPage() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
             
             {/* Form Pilihan Bahan dengan Dropdown */}
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex gap-3 items-end">
-              <div className="flex-1">
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex gap-3 items-end z-20 relative">
+              <div className="flex-grow">
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Pilih Bahan Baku</label>
-                <select
+                <SearchableSelect
+                  options={ingredientOptions}
                   value={selectedIngToAdd}
-                  onChange={(e) => setSelectedIngToAdd(e.target.value)}
-                  className="input-style w-full bg-white text-sm"
-                >
-                  <option value="">-- Pilih Bahan untuk Ditambahkan --</option>
-                  {availableIngredients.map(ing => (
-                    <option key={ing.ingredient_id} value={ing.ingredient_id}>
-                      {ing.ingredient_name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedIngToAdd(val)}
+                  placeholder="Ketik nama bahan untuk mencari..."
+                />
               </div>
               <button
                 type="button"
