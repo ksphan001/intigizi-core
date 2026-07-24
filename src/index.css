@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-size: 14px; /* Default browser adalah 16px. Menurunkan ke 14px akan mengecilkan seluruh teks, padding, margin, dan komponen aplikasi secara proporsional. */
+}
+
+
+/* Layer komponen kustom untuk standarisasi elemen UI */
+@layer components {
+  .input-style {
+    /* Bright Input: Clean white with soft green focus */
+    @apply mt-1 block w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-intigizi-green/40 focus:border-intigizi-green transition-all duration-200;
+  }
+
+  .btn-primary {
+    /* Bright Button: Solid Green (No Gradient) */
+    @apply flex items-center justify-center bg-intigizi-green text-white px-4 py-2 rounded-xl shadow-sm hover:bg-intigizi-green-dark hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-semibold text-sm tracking-wide;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center;
+  }
+}
+
+/* Memastikan peta tidak menutupi elemen UI lain seperti sidebar */
+.leaflet-container {
+  z-index: 0;
+}
+
+/* --- KODE BARU --- */
+/* Menambahkan keyframes untuk animasi modal notifikasi */
+@keyframes scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out forwards;
+}
+
+/* Menghilangkan scrollbar secara visual tetapi fungsi scroll tetap aktif */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
