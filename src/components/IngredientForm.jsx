@@ -14,7 +14,8 @@ function IngredientForm({ ingredient, onSave, onCancel, loading }) {
     carbohydrates: '',
     fat: '',
     fiber: '', // Baru
-    bdd_percentage: '' // Baru
+    bdd_percentage: '', // Baru
+    qc_parameters: '' // Baru
   });
   
   const [units, setUnits] = useState([]);
@@ -37,6 +38,7 @@ function IngredientForm({ ingredient, onSave, onCancel, loading }) {
         carbohydrates: ingredient.carbohydrates || '',
         fat: ingredient.fat || '',
         fiber: ingredient.fiber || '',
+        qc_parameters: ingredient.qc_parameters || '',
         // --- PERBAIKAN: Konversi dari 0.70 menjadi 70 ---
         bdd_percentage: ingredient.bdd_percentage ? (parseFloat(ingredient.bdd_percentage) * 100) : '100',
       });
@@ -91,6 +93,16 @@ function IngredientForm({ ingredient, onSave, onCancel, loading }) {
               <label className="block text-sm font-medium text-gray-700">Harga Terakhir (per Satuan Beli)</label>
               <input type="number" step="0.01" name="latest_price" value={formData.latest_price} onChange={handleChange} className="input-style" placeholder="Contoh: 50000" />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Parameter Kendali Mutu / QC (BGN Compliance)</label>
+            <textarea
+              name="qc_parameters"
+              value={formData.qc_parameters}
+              onChange={handleChange}
+              placeholder="Contoh: Suhu daging sapi segar < 4°C, sayuran hijau segar tidak layu, kemasan kedap udara."
+              className="input-style w-full h-20 py-2"
+            />
           </div>
         </div>
       </div>

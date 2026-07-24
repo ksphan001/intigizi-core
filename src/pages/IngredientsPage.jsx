@@ -174,6 +174,7 @@ function IngredientsPage() {
                                     <th scope="col" className="px-6 py-3">Nama Bahan</th>
                                     <th scope="col" className="px-6 py-3">Harga Terakhir</th>
                                     <th scope="col" className="px-6 py-3">Satuan</th>
+                                    <th scope="col" className="px-6 py-3">Parameter QC (Kendali Mutu)</th>
                                     <th scope="col" className="px-6 py-3 text-right">Aksi</th>
                                 </tr>
                             </thead>
@@ -183,6 +184,9 @@ function IngredientsPage() {
                                         <th scope="row" className="px-6 py-4 font-medium text-gray-900">{item.name}</th>
                                         <td className="px-6 py-4">{formatCurrency(item.latest_price)}</td>
                                         <td className="px-6 py-4">{item.unit_symbol}</td>
+                                        <td className="px-6 py-4 text-xs text-gray-600 max-w-xs truncate" title={item.qc_parameters || "Belum diatur"}>
+                                            {item.qc_parameters ? item.qc_parameters : <span className="text-gray-300 italic">Belum diatur</span>}
+                                        </td>
                                         <td className="px-6 py-4 text-right flex items-center justify-end space-x-2">
                                             <button onClick={() => handleOpenModal(item)} className="p-1 text-blue-600 hover:text-blue-800" title="Edit"><Edit size={16}/></button>
                                             <button onClick={() => handleDeleteRequest(item.id)} className="p-1 text-red-600 hover:text-red-800" title="Hapus"><Trash2 size={16}/></button>
