@@ -5,13 +5,12 @@ import Modal from '@/components/Modal.jsx';
 import SupplierForm from '@/components/SupplierForm.jsx';
 import ConfirmationModal from '@/components/ConfirmationModal.jsx';
 import Pagination from '@/components/Pagination.jsx';
-import { Edit, Trash2, Search, BookOpen, Truck, Loader2 } from 'lucide-react';
+import { Edit, Trash2, Search, BookOpen, Truck, Loader2, Plus } from 'lucide-react';
 import { useNotification } from '@/context/NotificationContext';
 
 const ITEMS_PER_PAGE = 10;
 
 function SuppliersPage() {
-  const { showNotification } = useNotification();
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,6 +28,11 @@ function SuppliersPage() {
   const [catalogSupplier, setCatalogSupplier] = useState(null);
   const [catalogItems, setCatalogItems] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  
+  const [allIngredients, setAllIngredients] = useState([]);
+  const [selectedIngToAdd, setSelectedIngToAdd] = useState('');
+
+  const { showNotification } = useNotification();
 
   const fetchSuppliers = useCallback(async () => {
     try {
@@ -100,9 +104,12 @@ function SuppliersPage() {
     setIsCatalogModalOpen(true);
     setCatalogLoading(true);
     setError('');
+    setSelectedIngToAdd('');
     try {
       const response = await apiClient.get(`/supplier_ingredients_manage.php?supplier_id=${supplier.id}`);
-      setCatalogItems(Array.isArray(response.data) ? response.data : []);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setAllIngredients(data);
+      setCatalogItems(data.filter(item => item.is_supplied === 1));
     } catch (err) {
       setError("Gagal memuat katalog bahan baku supplier.");
     } finally {
@@ -113,6 +120,29 @@ function SuppliersPage() {
   const handleCatalogItemChange = (index, field, value) => {
     const updated = [...catalogItems];
     updated[index][field] = value;
+    setCatalogItems(updated);
+  };
+
+  const handleAddIngredientToCatalog = () => {
+    if (!selectedIngToAdd) return;
+    const target = allIngredients.find(ai => ai.ingredient_id.toString() === selectedIngToAdd.toString());
+    if (target) {
+      setCatalogItems(prev => [
+        ...prev,
+        {
+          ...target,
+          is_supplied: 1,
+          base_price: target.base_price || 0,
+          daily_capacity: target.daily_capacity || 0
+        }
+      ]);
+      setSelectedIngToAdd('');
+    }
+  };
+
+  const handleRemoveFromCatalog = (index) => {
+    const updated = [...catalogItems];
+    updated.splice(index, 1);
     setCatalogItems(updated);
   };
 
@@ -127,7 +157,11 @@ function SuppliersPage() {
         items: catalogItems
       });
       setIsCatalogModalOpen(false);
-      showNotification ? showNotification('Katalog supplier berhasil disimpan.', 'success') : alert('Katalog supplier berhasil disimpan.');
+      if (showNotification) {
+        showNotification('Katalog supplier berhasil disimpan.', 'success');
+      } else {
+        alert('Katalog supplier berhasil disimpan.');
+      }
     } catch (err) {
       setError("Gagal menyimpan katalog bahan baku supplier.");
     } finally {
@@ -135,13 +169,12 @@ function SuppliersPage() {
     }
   };
 
-  const formatCurrency = (value) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+  // Filter out ingredients that are already in the catalog
+  const availableIngredients = useMemo(() => {
+    return allIngredients.filter(ai => 
+      !catalogItems.some(ci => ci.ingredient_id === ai.ingredient_id)
+    );
+  }, [allIngredients, catalogItems]);
 
   if (error && !isCatalogModalOpen) return <div className="text-red-500 p-4">{error}</div>;
 
@@ -246,79 +279,107 @@ function SuppliersPage() {
         {catalogLoading ? (
           <div className="flex justify-center p-8"><Loader2 className="animate-spin text-intigizi-green" /></div>
         ) : (
-          <form onSubmit={handleSaveCatalog} className="space-y-4">
+          <div className="space-y-4">
             {error && <p className="text-red-500 text-sm">{error}</p>}
             
-            <p className="text-xs text-gray-500 -mt-2 mb-4 leading-relaxed">
-              Centang bahan baku yang disediakan oleh supplier ini, kemudian tentukan harga dasar dan kapasitas pasokan harian.
-            </p>
+            {/* Form Pilihan Bahan dengan Dropdown */}
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex gap-3 items-end">
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Pilih Bahan Baku</label>
+                <select
+                  value={selectedIngToAdd}
+                  onChange={(e) => setSelectedIngToAdd(e.target.value)}
+                  className="input-style w-full bg-white text-sm"
+                >
+                  <option value="">-- Pilih Bahan untuk Ditambahkan --</option>
+                  {availableIngredients.map(ing => (
+                    <option key={ing.ingredient_id} value={ing.ingredient_id}>
+                      {ing.ingredient_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddIngredientToCatalog}
+                disabled={!selectedIngToAdd}
+                className="px-4 py-2 bg-intigizi-green text-white font-semibold rounded-xl text-sm hover:bg-green-700 transition-colors h-[38px] flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Plus size={16} />
+                <span>Tambah</span>
+              </button>
+            </div>
 
-            <div className="max-h-96 overflow-y-auto border rounded-xl divide-y divide-gray-100">
-              {catalogItems.map((item, index) => (
-                <div key={item.ingredient_id} className={`p-4 flex items-center justify-between gap-4 transition-colors ${item.is_supplied ? 'bg-green-50/40' : 'bg-white'}`}>
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <input 
-                      type="checkbox"
-                      checked={!!item.is_supplied}
-                      onChange={(e) => handleCatalogItemChange(index, 'is_supplied', e.target.checked ? 1 : 0)}
-                      className="w-5 h-5 text-intigizi-green border-gray-300 rounded focus:ring-intigizi-green cursor-pointer"
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{item.ingredient_name}</p>
-                      <p className="text-xs text-gray-400">Satuan: {item.default_unit_symbol}</p>
-                    </div>
-                  </div>
-
-                  {item.is_supplied === 1 && (
-                    <div className="flex gap-3 flex-shrink-0">
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Harga Dasar (Rp)</label>
-                        <input 
-                          type="number"
-                          value={item.base_price}
-                          onChange={(e) => handleCatalogItemChange(index, 'base_price', e.target.value)}
-                          className="input-style text-xs py-1 px-2.5 w-28"
-                          required
-                          min="0"
-                        />
+            <form onSubmit={handleSaveCatalog} className="space-y-4">
+              <div className="max-h-80 overflow-y-auto border rounded-xl divide-y divide-gray-100 bg-white">
+                {catalogItems.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8 italic">Belum ada bahan baku di katalog supplier ini.</p>
+                ) : (
+                  catalogItems.map((item, index) => (
+                    <div key={item.ingredient_id} className="p-3 flex items-center justify-between gap-4 bg-white hover:bg-gray-50 transition-colors">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{item.ingredient_name}</p>
+                        <p className="text-xs text-gray-400 font-normal">Satuan: {item.default_unit_symbol}</p>
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Kapasitas Harian</label>
-                        <div className="relative">
+
+                      <div className="flex gap-2.5 flex-shrink-0 items-end">
+                        <div>
+                          <label className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">Harga Dasar (Rp)</label>
                           <input 
                             type="number"
-                            value={item.daily_capacity}
-                            onChange={(e) => handleCatalogItemChange(index, 'daily_capacity', e.target.value)}
-                            className="input-style text-xs py-1 pl-2.5 pr-8 w-28"
+                            value={item.base_price}
+                            onChange={(e) => handleCatalogItemChange(index, 'base_price', e.target.value)}
+                            className="input-style text-xs py-1 px-2.5 w-24"
                             required
                             min="0"
                           />
-                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-gray-400">{item.default_unit_symbol}</span>
                         </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">Kapasitas Harian</label>
+                          <div className="relative">
+                            <input 
+                              type="number"
+                              value={item.daily_capacity}
+                              onChange={(e) => handleCatalogItemChange(index, 'daily_capacity', e.target.value)}
+                              className="input-style text-xs py-1 pl-2 w-24 pr-6"
+                              required
+                              min="0"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-400">{item.default_unit_symbol}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFromCatalog(index)}
+                          className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
+                          title="Hapus dari Katalog"
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                  ))
+                )}
+              </div>
 
-            <div className="pt-4 border-t flex justify-end space-x-2">
-              <button 
-                type="button" 
-                onClick={() => setIsCatalogModalOpen(false)}
-                className="px-4 py-2 bg-gray-150 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
-              >
-                Batal
-              </button>
-              <button 
-                type="submit"
-                disabled={catalogLoading}
-                className="btn-primary"
-              >
-                {catalogLoading ? 'Menyimpan...' : 'Simpan Katalog'}
-              </button>
-            </div>
-          </form>
+              <div className="pt-4 border-t flex justify-end space-x-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsCatalogModalOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit"
+                  disabled={catalogLoading}
+                  className="btn-primary"
+                >
+                  {catalogLoading ? 'Menyimpan...' : 'Simpan Katalog'}
+                </button>
+              </div>
+            </form>
+          </div>
         )}
       </Modal>
 
