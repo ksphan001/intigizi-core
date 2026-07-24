@@ -228,7 +228,7 @@ function SuppliersPage() {
       </div>
 
       {/* MODAL EDIT/TAMBAH SUPPLIER */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingSupplier ? 'Edit Supplier' : 'Tambah Supplier'}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingSupplier ? 'Edit Supplier' : 'Tambah Supplier'} size="lg">
         <SupplierForm 
           supplier={editingSupplier} 
           onSave={handleSave} 
