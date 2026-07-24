@@ -35,6 +35,28 @@ function BeneficiariesPage() {
   const [attendanceMap, setAttendanceMap] = useState({});
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   
+  const [selectedPoint, setSelectedPoint] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedBmiStatus, setSelectedBmiStatus] = useState("");
+  const [distributionPoints, setDistributionPoints] = useState([]);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const [pointsRes, categoriesRes] = await Promise.all([
+          apiClient.get('/distribution_points_get.php'),
+          apiClient.get('/beneficiary_categories_get.php')
+        ]);
+        setDistributionPoints(pointsRes.data || []);
+        setCategories(categoriesRes.data || []);
+      } catch (err) {
+        console.error("Gagal memuat opsi filter database penerima manfaat.");
+      }
+    };
+    fetchFilterOptions();
+  }, []);
+  
   const { showNotification } = useNotification();
 
   const fetchData = useCallback(async () => {
@@ -97,12 +119,28 @@ function BeneficiariesPage() {
   };
 
   const filteredBeneficiaries = useMemo(() => {
-    if (!searchQuery) return beneficiaries;
-    return beneficiaries.filter(b => 
+    return beneficiaries.filter((b) => {
+      const matchesSearch = !searchQuery || 
         b.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (b.nik_nisn && b.nik_nisn.includes(searchQuery))
-    );
-  }, [beneficiaries, searchQuery]);
+        (b.nik_nisn && b.nik_nisn.includes(searchQuery));
+      
+      const matchesPoint = !selectedPoint || b.distribution_point_id.toString() === selectedPoint.toString();
+      
+      const matchesCategory = !selectedCategory || b.category_id.toString() === selectedCategory.toString();
+      
+      let bmiStatus = "Normal";
+      const bmi = parseFloat(b.current_bmi);
+      if (!b.current_bmi) bmiStatus = "Tidak Ada Data";
+      else if (bmi < 17.0) bmiStatus = "Sangat Kurus";
+      else if (bmi < 18.5) bmiStatus = "Kurus";
+      else if (bmi < 25.0) bmiStatus = "Normal";
+      else bmiStatus = "Obesitas";
+      
+      const matchesBmi = !selectedBmiStatus || bmiStatus === selectedBmiStatus;
+      
+      return matchesSearch && matchesPoint && matchesCategory && matchesBmi;
+    });
+  }, [beneficiaries, searchQuery, selectedPoint, selectedCategory, selectedBmiStatus]);
 
   const totalPages = Math.ceil(filteredBeneficiaries.length / ITEMS_PER_PAGE);
   const paginatedBeneficiaries = useMemo(() => {
@@ -235,15 +273,63 @@ function BeneficiariesPage() {
       </div>
       
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="mb-4 relative">
-          <input
-            type="text"
-            placeholder="Cari nama atau NIK/NISN..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-style w-full pl-10"
-          />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        {/* ROW PENCARIAN & FILTERING */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Cari nama atau NIK..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input-style w-full pl-10 text-sm"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          </div>
+
+          <div>
+            <select
+              value={selectedPoint}
+              onChange={(e) => setSelectedPoint(e.target.value)}
+              className="input-style w-full text-sm bg-white"
+            >
+              <option value="">-- Semua Titik Distribusi --</option>
+              {distributionPoints.map((dp) => (
+                <option key={dp.id} value={dp.id}>
+                  {dp.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="input-style w-full text-sm bg-white"
+            >
+              <option value="">-- Semua Kategori Gizi --</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.category_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={selectedBmiStatus}
+              onChange={(e) => setSelectedBmiStatus(e.target.value)}
+              className="input-style w-full text-sm bg-white"
+            >
+              <option value="">-- Semua Status BMI --</option>
+              <option value="Sangat Kurus">Sangat Kurus (BMI &lt; 17)</option>
+              <option value="Kurus">Kurus (17 s.d 18.5)</option>
+              <option value="Normal">Normal (18.5 s.d 25)</option>
+              <option value="Obesitas">Obesitas (BMI &ge; 25)</option>
+              <option value="Tidak Ada Data">Tidak Ada Data</option>
+            </select>
+          </div>
         </div>
 
         {activeTab === "database" ? (
