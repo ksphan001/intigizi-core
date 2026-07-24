@@ -313,7 +313,7 @@ function SuppliersPage() {
             </div>
 
             <form onSubmit={handleSaveCatalog} className="space-y-4">
-              <div className="max-h-80 overflow-y-auto border rounded-xl divide-y divide-gray-100 bg-white">
+              <div className="max-h-80 overflow-y-auto border rounded-xl divide-y divide-gray-100 bg-white no-scrollbar">
                 {catalogItems.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-8 italic">Belum ada bahan baku di katalog supplier ini.</p>
                 ) : (

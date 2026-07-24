@@ -34,7 +34,7 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
         </div>
         
         {/* Area Konten (Scrollable) */}
-        <div className="overflow-y-auto">
+        <div className="overflow-y-auto no-scrollbar">
           <div className="p-6">
             {children}
           </div>
