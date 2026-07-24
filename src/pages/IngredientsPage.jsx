@@ -200,7 +200,7 @@ function IngredientsPage() {
                 <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             </div>
 
-            <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingIngredient ? 'Edit Bahan Baku' : 'Tambah Bahan Baku'}>
+            <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingIngredient ? 'Edit Bahan Baku' : 'Tambah Bahan Baku'} size="3xl">
                 <IngredientForm
                     ingredient={editingIngredient}
                     units={units}
