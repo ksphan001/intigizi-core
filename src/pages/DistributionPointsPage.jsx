@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import apiClient from '../services/api';
 import { useNotification } from '../context/NotificationContext';
-import { Plus, Edit, Trash2, Loader2, Users } from 'lucide-react';
+import { Edit, Trash2, Loader2, Users } from 'lucide-react';
 import Modal from '../components/Modal';
 import DistributionPointForm from '../components/DistributionPointForm';
 import ConfirmationModal from '../components/ConfirmationModal';
+import PageHeader from '../components/PageHeader';
+import Pagination from '../components/Pagination';
+
+const ITEMS_PER_PAGE = 10;
 
 function DistributionPointsPage() {
   const [points, setPoints] = useState([]);
@@ -14,6 +18,7 @@ function DistributionPointsPage() {
   const [editingPoint, setEditingPoint] = useState(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [pointToDelete, setPointToDelete] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const { showNotification } = useNotification();
 
   const fetchData = useCallback(async () => {
@@ -93,14 +98,19 @@ function DistributionPointsPage() {
       return categoryCounts.reduce((total, item) => total + (parseInt(item.count, 10) || 0), 0);
   };
 
+  const totalPages = Math.ceil(points.length / ITEMS_PER_PAGE);
+  const paginatedPoints = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return points.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [currentPage, points]);
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Manajemen Titik Distribusi</h1>
-        <button onClick={() => handleOpenModal()} className="btn-primary flex items-center">
-          <Plus size={20} className="mr-2" /> Tambah Titik Baru
-        </button>
-      </div>
+      <PageHeader 
+        title="Manajemen Titik Distribusi" 
+        buttonText="Tambah Titik Baru" 
+        onButtonClick={() => handleOpenModal()} 
+      />
 
       <div className="bg-white p-6 rounded-lg shadow-md">
         {loading ? (
@@ -108,38 +118,41 @@ function DistributionPointsPage() {
         ) : points.length === 0 ? (
           <p className="text-center text-gray-500">Belum ada titik distribusi yang ditambahkan.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-gray-500">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3">Nama Titik</th>
-                  <th className="px-6 py-3">Alamat</th>
-                  <th className="px-6 py-3">Total Penerima</th>
-                  <th className="px-6 py-3">PIC</th>
-                  <th className="px-6 py-3 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {points.map((point) => (
-                  <tr key={point.id} className="bg-white border-b hover:bg-gray-50">
-                    <th className="px-6 py-4 font-medium text-gray-900">{point.name}</th>
-                    <td className="px-6 py-4">{point.address}</td>
-                    <td className="px-6 py-4 font-semibold flex items-center">
-                        <Users size={14} className="mr-2 text-gray-500"/>
-                        {calculateTotalBeneficiaries(point.category_counts)} orang
-                    </td>
-                    <td className="px-6 py-4">{point.pic_name} ({point.pic_phone})</td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex justify-center space-x-2">
-                        <button onClick={() => handleOpenModal(point)} className="text-blue-600 hover:text-blue-800 p-1"><Edit size={16} /></button>
-                        <button onClick={() => openDeleteConfirm(point)} className="text-red-600 hover:text-red-800 p-1"><Trash2 size={16} /></button>
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-500">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3">Nama Titik</th>
+                    <th className="px-6 py-3">Alamat</th>
+                    <th className="px-6 py-3">Total Penerima</th>
+                    <th className="px-6 py-3">PIC</th>
+                    <th className="px-6 py-3 text-center">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {paginatedPoints.map((point) => (
+                    <tr key={point.id} className="bg-white border-b hover:bg-gray-50">
+                      <th className="px-6 py-4 font-medium text-gray-900">{point.name}</th>
+                      <td className="px-6 py-4">{point.address}</td>
+                      <td className="px-6 py-4 font-semibold flex items-center">
+                          <Users size={14} className="mr-2 text-gray-500"/>
+                          {calculateTotalBeneficiaries(point.category_counts)} orang
+                      </td>
+                      <td className="px-6 py-4">{point.pic_name} ({point.pic_phone})</td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex justify-center space-x-2">
+                          <button onClick={() => handleOpenModal(point)} className="text-blue-600 hover:text-blue-800 p-1"><Edit size={16} /></button>
+                          <button onClick={() => openDeleteConfirm(point)} className="text-red-600 hover:text-red-800 p-1"><Trash2 size={16} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+          </>
         )}
       </div>
 
