@@ -25,7 +25,8 @@ function SupplierForm({ supplier, onSave, onCancel }) {
     coverage_radius_km: 15,
     coverage_area_desc: '',
     latitude: '',
-    longitude: ''
+    longitude: '',
+    phone_number: ''
   });
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -55,7 +56,8 @@ function SupplierForm({ supplier, onSave, onCancel }) {
         coverage_radius_km: supplier.coverage_radius_km || 15,
         coverage_area_desc: supplier.coverage_area_desc || '',
         latitude: supplier.latitude || '',
-        longitude: supplier.longitude || ''
+        longitude: supplier.longitude || '',
+        phone_number: supplier.supplier_phone || ''
       });
     }
   }, [supplier]);
@@ -129,19 +131,24 @@ function SupplierForm({ supplier, onSave, onCancel }) {
         <input type="text" name="supplier_name" id="supplier_name" value={formData.supplier_name} onChange={handleChange} className="input-style w-full" required />
       </div>
       
+      <div>
+        <label htmlFor="user_id" className="block text-sm font-semibold text-gray-700 mb-1">Akun User Terhubung (Dapur Mitra)</label>
+        <select name="user_id" id="user_id" value={formData.user_id} onChange={handleChange} className="input-style w-full bg-white" required>
+          {supplier && <option value={supplier.user_id}>{supplier.username}</option>}
+          {users.map(user => (
+            <option key={user.id} value={user.id}>{user.full_name} ({user.username})</option>
+          ))}
+        </select>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="user_id" className="block text-sm font-semibold text-gray-700 mb-1">Akun User Terhubung</label>
-          <select name="user_id" id="user_id" value={formData.user_id} onChange={handleChange} className="input-style w-full bg-white" required>
-            {supplier && <option value={supplier.user_id}>{supplier.username}</option>}
-            {users.map(user => (
-              <option key={user.id} value={user.id}>{user.full_name} ({user.username})</option>
-            ))}
-          </select>
+          <label htmlFor="contact_person" className="block text-sm font-semibold text-gray-700 mb-1">Kontak Person</label>
+          <input type="text" name="contact_person" id="contact_person" value={formData.contact_person} onChange={handleChange} className="input-style w-full" placeholder="Cth: Ahmad" />
         </div>
         <div>
-          <label htmlFor="contact_person" className="block text-sm font-semibold text-gray-700 mb-1">Kontak Person</label>
-          <input type="text" name="contact_person" id="contact_person" value={formData.contact_person} onChange={handleChange} className="input-style w-full" />
+          <label htmlFor="phone_number" className="block text-sm font-semibold text-gray-700 mb-1">No. Telepon / WhatsApp</label>
+          <input type="text" name="phone_number" id="phone_number" value={formData.phone_number} onChange={handleChange} className="input-style w-full" placeholder="Cth: 08123456789 atau 628123..." />
         </div>
       </div>
 

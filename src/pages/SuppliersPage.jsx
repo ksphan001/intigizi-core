@@ -5,7 +5,7 @@ import Modal from '@/components/Modal.jsx';
 import SupplierForm from '@/components/SupplierForm.jsx';
 import ConfirmationModal from '@/components/ConfirmationModal.jsx';
 import Pagination from '@/components/Pagination.jsx';
-import { Edit, Trash2, Search, BookOpen, Truck, Loader2, Plus } from 'lucide-react';
+import { Edit, Trash2, Search, BookOpen, Truck, Loader2, Plus, MessageCircle } from 'lucide-react';
 import { useNotification } from '@/context/NotificationContext';
 import SearchableSelect from '@/components/SearchableSelect.jsx';
 
@@ -34,6 +34,17 @@ function SuppliersPage() {
   const [selectedIngToAdd, setSelectedIngToAdd] = useState('');
 
   const { showNotification } = useNotification();
+
+  const getWhatsAppLink = (phone) => {
+    if (!phone) return '';
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) {
+      cleaned = '62' + cleaned.slice(1);
+    } else if (cleaned.startsWith('8')) {
+      cleaned = '62' + cleaned;
+    }
+    return `https://wa.me/${cleaned}`;
+  };
 
   const fetchSuppliers = useCallback(async () => {
     try {
@@ -236,7 +247,25 @@ function SuppliersPage() {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-xs">{item.contact_person}</td>
+                    <td className="px-6 py-4 text-xs font-medium text-gray-800">
+                      <div className="flex items-center gap-1.5">
+                        <span>{item.contact_person}</span>
+                        {item.supplier_phone && (
+                          <a
+                            href={getWhatsAppLink(item.supplier_phone)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 bg-green-100 hover:bg-green-200 text-green-600 rounded transition-colors"
+                            title={`Hubungi ${item.contact_person} di WA: ${item.supplier_phone}`}
+                          >
+                            <MessageCircle size={13} />
+                          </a>
+                        )}
+                      </div>
+                      {item.supplier_phone && (
+                        <div className="text-[10px] text-gray-400 font-mono mt-0.5">{item.supplier_phone}</div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-xs">{item.username}</td>
                     <td className="px-6 py-4 flex justify-end space-x-2 items-center">
                       <button 
