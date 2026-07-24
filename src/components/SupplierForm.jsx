@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/api';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+import markerIconPng from "leaflet/dist/images/marker-icon.png";
+import markerShadowPng from "leaflet/dist/images/marker-shadow.png";
+
+// Atasi bug icon marker bawaan Leaflet di bundle bundler
+let DefaultIcon = L.icon({
+  iconUrl: markerIconPng,
+  shadowUrl: markerShadowPng,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 // Formulir untuk menambah atau mengedit data supplier.
 function SupplierForm({ supplier, onSave, onCancel }) {
@@ -16,6 +30,7 @@ function SupplierForm({ supplier, onSave, onCancel }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -44,6 +59,50 @@ function SupplierForm({ supplier, onSave, onCancel }) {
       });
     }
   }, [supplier]);
+
+  // Leaflet map initialization effect
+  useEffect(() => {
+    if (!showMap) return;
+
+    // Default ke koordinat Monas jika kosong
+    const defaultLat = parseFloat(formData.latitude) || -6.175392;
+    const defaultLng = parseFloat(formData.longitude) || 106.827153;
+
+    const map = L.map('map-picker').setView([defaultLat, defaultLng], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    let marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+
+    marker.on('dragend', function (e) {
+      const position = marker.getLatLng();
+      setFormData(prev => ({
+        ...prev,
+        latitude: position.lat.toFixed(6),
+        longitude: position.lng.toFixed(6)
+      }));
+    });
+
+    map.on('click', function (e) {
+      marker.setLatLng(e.latlng);
+      setFormData(prev => ({
+        ...prev,
+        latitude: e.latlng.lat.toFixed(6),
+        longitude: e.latlng.lng.toFixed(6)
+      }));
+    });
+
+    // Sesuaikan view setelah render
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+
+    return () => {
+      map.remove();
+    };
+  }, [showMap]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -104,9 +163,27 @@ function SupplierForm({ supplier, onSave, onCancel }) {
         </div>
         <div>
           <label htmlFor="longitude" className="block text-sm font-semibold text-gray-700 mb-1">Longitude (Koordinat)</label>
-          <input type="text" name="longitude" id="longitude" value={formData.longitude} onChange={handleChange} className="input-style w-full" placeholder="Cth: 106.827153" />
+          <div className="relative">
+            <input type="text" name="longitude" id="longitude" value={formData.longitude} onChange={handleChange} className="input-style w-full pr-28" placeholder="Cth: 106.827153" />
+            <button
+              type="button"
+              onClick={() => setShowMap(!showMap)}
+              className="absolute right-1 top-1/2 -translate-y-1/2 bg-intigizi-green text-white text-[10px] font-bold px-2 py-1.5 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              {showMap ? 'Tutup Peta' : 'Pilih Dari Peta'}
+            </button>
+          </div>
         </div>
       </div>
+
+      {showMap && (
+        <div className="border rounded-xl overflow-hidden mb-2 shadow-inner">
+          <div id="map-picker" style={{ height: '240px', width: '100%', zIndex: 10 }}></div>
+          <p className="text-[10px] text-gray-400 text-center py-1 bg-gray-50 border-t">
+            Klik pada peta atau geser penanda untuk memperbarui koordinat.
+          </p>
+        </div>
+      )}
 
       <div>
         <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-1">Alamat Lengkap</label>
