@@ -282,7 +282,7 @@ function SuppliersPage() {
         isOpen={isCatalogModalOpen} 
         onClose={() => setIsCatalogModalOpen(false)} 
         title={`Katalog Bahan Baku: ${catalogSupplier?.supplier_name}`}
-        size="lg"
+        size="3xl"
       >
         {catalogLoading ? (
           <div className="flex justify-center p-8"><Loader2 className="animate-spin text-intigizi-green" /></div>
