@@ -310,7 +310,7 @@ function BeneficiariesPage() {
               <option value="">-- Semua Kategori Gizi --</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.category_name}
+                  {c.name}
                 </option>
               ))}
             </select>
