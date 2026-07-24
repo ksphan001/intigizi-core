@@ -287,7 +287,7 @@ function SuppliersPage() {
         {catalogLoading ? (
           <div className="flex justify-center p-8"><Loader2 className="animate-spin text-intigizi-green" /></div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 min-h-[420px] flex flex-col">
             {error && <p className="text-red-500 text-sm">{error}</p>}
             
             {/* Form Pilihan Bahan dengan Dropdown */}
@@ -312,8 +312,8 @@ function SuppliersPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveCatalog} className="space-y-4">
-              <div className="max-h-80 overflow-y-auto border rounded-xl divide-y divide-gray-100 bg-white no-scrollbar">
+            <form onSubmit={handleSaveCatalog} className="space-y-4 flex-grow flex flex-col justify-between">
+              <div className="max-h-64 overflow-y-auto border rounded-xl divide-y divide-gray-100 bg-white no-scrollbar flex-grow">
                 {catalogItems.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-8 italic">Belum ada bahan baku di katalog supplier ini.</p>
                 ) : (
