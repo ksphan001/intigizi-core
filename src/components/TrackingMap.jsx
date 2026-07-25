@@ -186,7 +186,54 @@ function TrackingMap({ mainKitchen, distributions, couriers = [] }) {
         </MarkerF>
       ))}
 
-      {/* 3. Titik Distribusi & Rute */}
+      {/* 3. Render Rute Terhubung per Kurir (Multi-Armada) */}
+      {kitchenPos && (() => {
+        const courierGroups = {};
+        distributions.forEach((d) => {
+          const key = d.courier_id || "unassigned";
+          if (!courierGroups[key]) {
+            courierGroups[key] = [];
+          }
+          courierGroups[key].push(d);
+        });
+
+        const getRouteColor = (courierId) => {
+          if (!courierId || courierId === "unassigned") return "#94A3B8"; // Abu-abu untuk unassigned
+          const colors = ["#2563EB", "#7C3AED", "#0D9488", "#D97706", "#DB2777", "#4F46E5", "#059669"];
+          return colors[parseInt(courierId) % colors.length];
+        };
+
+        return Object.keys(courierGroups).map((courierKey) => {
+          const stops = [...courierGroups[courierKey]];
+          // Urutkan berdasarkan waktu pengiriman
+          stops.sort((a, b) => (a.delivery_time || "").localeCompare(b.delivery_time || ""));
+
+          const pathPoints = [kitchenPos];
+          stops.forEach((s) => {
+            if (s.point_coords?.lat && s.point_coords?.lon) {
+              pathPoints.push({
+                lat: parseFloat(s.point_coords.lat),
+                lng: parseFloat(s.point_coords.lon)
+              });
+            }
+          });
+
+          return (
+            <Polyline
+              key={`route-${courierKey}`}
+              path={pathPoints}
+              options={{
+                strokeColor: getRouteColor(courierKey),
+                strokeOpacity: 0.8,
+                strokeWeight: 4,
+                geodesic: true,
+              }}
+            />
+          );
+        });
+      })()}
+
+      {/* 4. Marker Titik Distribusi (Sekolah/PAUD) */}
       {distributions.map((dist) => {
         const distPos =
           dist.point_coords?.lat && dist.point_coords?.lon
@@ -196,43 +243,34 @@ function TrackingMap({ mainKitchen, distributions, couriers = [] }) {
               }
             : null;
         if (!distPos) return null;
-        const isCompleted = dist.status === "Diterima";
-        const strokeColor = isCompleted ? "#10B981" : "#A0AEC0";
 
         return (
-          <React.Fragment key={dist.report_id}>
-            <MarkerF
-              position={distPos}
-              title={dist.point_name}
-              onClick={() => setActiveMarker(dist.report_id)}
-            >
-              {activeMarker === dist.report_id && (
-                <InfoWindowF onCloseClick={() => setActiveMarker(null)}>
-                  <div className="p-2 max-w-[200px]">
-                    <h3 className="font-bold text-gray-800">
-                      {dist.point_name}
-                    </h3>
-                    <p className="text-xs mt-1">{dist.menu_name}</p>
-                    <p className="text-xs font-semibold mt-1 text-intigizi-green">
-                      {dist.total_beneficiaries} Porsi
-                    </p>
+          <MarkerF
+            key={dist.report_id}
+            position={distPos}
+            title={dist.point_name}
+            onClick={() => setActiveMarker(dist.report_id)}
+          >
+            {activeMarker === dist.report_id && (
+              <InfoWindowF onCloseClick={() => setActiveMarker(null)}>
+                <div className="p-2 max-w-[220px]">
+                  <h3 className="font-bold text-gray-800 text-sm">
+                    {dist.point_name}
+                  </h3>
+                  <p className="text-xs text-gray-650 mt-1">Menu: {dist.menu_name}</p>
+                  <p className="text-xs font-semibold text-intigizi-green mt-0.5">
+                    Kapasitas: {dist.total_beneficiaries} Porsi
+                  </p>
+                  <div className="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase">
+                    <span>Status: {dist.status}</span>
+                    <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md">
+                      {dist.courier_name || "Beli Manual"}
+                    </span>
                   </div>
-                </InfoWindowF>
-              )}
-            </MarkerF>
-            {/* Rute Statis */}
-            {kitchenPos && (
-              <Polyline
-                path={[kitchenPos, distPos]}
-                options={{
-                  strokeColor: strokeColor,
-                  strokeOpacity: 0.6,
-                  strokeWeight: 3,
-                  geodesic: true,
-                }}
-              />
+                </div>
+              </InfoWindowF>
             )}
-          </React.Fragment>
+          </MarkerF>
         );
       })}
 
