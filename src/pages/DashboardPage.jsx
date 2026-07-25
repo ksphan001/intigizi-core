@@ -34,9 +34,14 @@ import {
   Loader2,
   User,
   ArrowRight,
+  Navigation,
+  StopCircle,
+  CheckCircle2,
 } from "lucide-react";
 import DistributionMap from "@/components/DistributionMap.jsx";
 import TrackingMap from "@/components/TrackingMap.jsx";
+import { useNotification } from "@/context/NotificationContext.jsx";
+import ConfirmationModal from "@/components/ConfirmationModal.jsx";
 
 const StatCard = ({ icon, title, value, loading }) => (
   <div className="bg-white p-5 rounded-xl shadow-md flex items-center space-x-4 transition-all hover:shadow-lg hover:-translate-y-1 border border-gray-100">
@@ -65,11 +70,71 @@ function DashboardPage() {
   const [trackingData, setTrackingData] = useState(null);
   const [couriers, setCouriers] = useState([]);
 
+  // --- STATE GEOLOKASI DRIVER ---
+  const { showNotification } = useNotification();
+  const [isDelivering, setIsDelivering] = useState(false);
+  const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
+  const watchIdRef = React.useRef(null);
+
+  const startDelivery = () => {
+    if (!navigator.geolocation) {
+      showNotification("Browser Anda tidak mendukung Geolocation.", "error");
+      return;
+    }
+    setIsDelivering(true);
+    localStorage.setItem("is_delivering", "true");
+    showNotification(
+      "Pengantaran dimulai. Lokasi Anda sedang dilacak.",
+      "success",
+    );
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          await apiClient.post("/tracking_update.php", { latitude, longitude });
+        } catch (error) {
+          console.error("Gagal mengirim lokasi:", error);
+        }
+      },
+      (error) => {
+        console.error("Error Geolocation:", error);
+        showNotification(
+          "Gagal mengakses lokasi. Pastikan GPS aktif.",
+          "error",
+        );
+        setIsDelivering(false);
+        localStorage.removeItem("is_delivering");
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 },
+    );
+  };
+
+  const stopDelivery = async () => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    try {
+      await apiClient.post("/tracking_stop.php");
+    } catch (e) {
+      console.log("Gagal stop di server");
+    }
+
+    setIsDelivering(false);
+    setIsStopConfirmOpen(false);
+    localStorage.removeItem("is_delivering");
+    showNotification("Pengantaran selesai. Pelacakan dihentikan.", "info");
+  };
+
+  const handleToggleDelivery = () => {
+    if (isDelivering) setIsStopConfirmOpen(true);
+    else startDelivery();
+  };
+
   useEffect(() => {
     if (user) {
       const roleId = Number(user.role_id);
       if (roleId === 8) navigate("/app/admin/dashboard");
-      else if (roleId === 6) navigate("/app/distribution-reports");
       else if (roleId === 5)
         navigate(
           user.org_type === "Vendor"
@@ -82,6 +147,12 @@ function DashboardPage() {
   }, [user, navigate]);
 
   useEffect(() => {
+    // Restore live sharing state from localStorage
+    const savedSharing = localStorage.getItem("is_delivering");
+    if (savedSharing === "true" && Number(user?.role_id) === 6) {
+      startDelivery();
+    }
+
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -127,7 +198,13 @@ function DashboardPage() {
       }
     };
 
-    if (user && ![5, 8, 9, 10].includes(Number(user.role_id))) {
+    if (user && Number(user.role_id) === 6) {
+      setLoading(true);
+      fetchTracking().then(() => setLoading(false));
+      fetchCouriers();
+      const interval = setInterval(fetchCouriers, 10000);
+      return () => clearInterval(interval);
+    } else if (user && ![5, 8, 9, 10].includes(Number(user.role_id))) {
       fetchData();
       fetchTracking();
       fetchCouriers();
@@ -218,6 +295,141 @@ function DashboardPage() {
       </div>
     );
   if (error) return <div className="text-red-500">{error}</div>;
+
+  if (user && Number(user.role_id) === 6) {
+    const driverDistributions = (trackingData?.distributions || []).filter(
+      (d) => Number(d.courier_id) === Number(user.id)
+    );
+    const totalStops = driverDistributions.length;
+    const completedStops = driverDistributions.filter(d => d.status === 'Diterima').length;
+    const totalPortions = driverDistributions.reduce((sum, d) => sum + parseInt(d.total_beneficiaries || 0), 0);
+
+    return (
+      <div className="space-y-6 pb-10">
+        {/* Header */}
+        <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">Dasbor Distribusi</h1>
+            <p className="text-xs text-gray-500 mt-1">Selamat bertugas, <span className="font-semibold text-intigizi-green">{user.name}</span>. Pantau rute & aktifkan siaran lokasi.</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleToggleDelivery}
+              className={`h-[38px] flex items-center px-5 py-2 rounded-xl font-bold text-xs transition-all shadow-sm ${
+                isDelivering
+                  ? "bg-red-600 text-white hover:bg-red-700 animate-pulse"
+                  : "bg-intigizi-orange text-white hover:bg-opacity-90"
+              }`}
+            >
+              {isDelivering ? <StopCircle size={16} className="mr-1.5" /> : <Navigation size={16} className="mr-1.5" />}
+              {isDelivering ? "Matikan Live" : "Mulai Pengantaran (Live)"}
+            </button>
+            <Link
+              to="/app/distribution-reports"
+              className="h-[38px] flex items-center px-4 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold text-xs transition-all border border-gray-200"
+            >
+              <ClipboardList size={16} className="mr-1.5" /> Kelola Pengiriman
+            </Link>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+            <div className="bg-blue-50 p-3 rounded-full text-blue-600"><MapPin size={24} /></div>
+            <div>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Total Titik Pengiriman</p>
+              <p className="text-2xl font-black text-gray-800 mt-0.5">{totalStops} Titik</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+            <div className="bg-green-50 p-3 rounded-full text-green-600"><CheckCircle2 size={24} /></div>
+            <div>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Selesai Dikirim</p>
+              <p className="text-2xl font-black text-gray-800 mt-0.5">{completedStops} / {totalStops} Titik</p>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+            <div className="bg-orange-50 p-3 rounded-full text-orange-600"><Utensils size={24} /></div>
+            <div>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Total Porsi Makanan</p>
+              <p className="text-2xl font-black text-gray-800 mt-0.5">{totalPortions.toLocaleString("id-ID")} Porsi</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Split: Rute & Map */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Rute List */}
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[500px]">
+            <h3 className="font-bold text-gray-800 text-sm mb-4">Urutan Rute Pengantaran Saya</h3>
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 no-scrollbar">
+              {driverDistributions.length === 0 ? (
+                <div className="text-center text-gray-400 italic py-16 text-xs">
+                  Belum ada titik pengantaran ditugaskan untuk Anda hari ini.
+                </div>
+              ) : (
+                driverDistributions
+                  .sort((a, b) => (a.delivery_time || "").localeCompare(b.delivery_time || ""))
+                  .map((stop, index) => (
+                    <div
+                      key={stop.report_id}
+                      className={`p-4 rounded-xl border transition-all flex items-start space-x-3.5 ${
+                        stop.status === "Diterima"
+                          ? "bg-green-50/50 border-green-200"
+                          : "bg-white border-gray-150 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
+                        stop.status === "Diterima" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-700"
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-gray-800 text-xs truncate">{stop.point_name}</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5 truncate">Menu: {stop.menu_name}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                            stop.status === "Diterima" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-850"
+                          }`}>
+                            {stop.status}
+                          </span>
+                          <span className="text-[10px] font-black text-gray-700">
+                            {stop.total_beneficiaries} Porsi
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+
+          {/* Map Viewer */}
+          <div className="lg:col-span-2 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm h-[500px] relative overflow-hidden">
+            <TrackingMap
+              mainKitchen={trackingData?.main_kitchen}
+              distributions={driverDistributions}
+              couriers={couriers.filter(c => Number(c.user_id) === Number(user.id))}
+            />
+          </div>
+        </div>
+
+        {/* Live confirmation stop modal */}
+        <ConfirmationModal
+          isOpen={isStopConfirmOpen}
+          onClose={() => setIsStopConfirmOpen(false)}
+          onConfirm={stopDelivery}
+          title="Hentikan Pelacakan Live?"
+          message="Apakah Anda yakin ingin mengakhiri sesi pengantaran ini? Posisi Anda tidak akan lagi diperbarui di peta publik."
+          confirmText="Ya, Hentikan"
+          confirmColor="bg-red-600 hover:bg-red-700"
+          icon={<StopCircle size={16} className="mr-2" />}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-10">
