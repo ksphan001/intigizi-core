@@ -11,6 +11,7 @@ function ManualPOForm({ onSave, onCancel, loading }) {
 
   const [allSuppliers, setAllSuppliers] = useState([]);
   const [allIngredients, setAllIngredients] = useState([]);
+  const [supplierCatalog, setSupplierCatalog] = useState([]);
 
   const [error, setError] = useState("");
 
@@ -20,7 +21,6 @@ function ManualPOForm({ onSave, onCancel, loading }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // PERBAIKAN: Menggunakan endpoint yang benar untuk mengambil supplier DAN vendor
         const [suppliersRes, ingredientsRes] = await Promise.all([
           apiClient.get("/procurement_get_suppliers.php"),
           apiClient.get("/ingredients_get.php"),
@@ -28,8 +28,9 @@ function ManualPOForm({ onSave, onCancel, loading }) {
         setAllSuppliers(suppliersRes.data);
         setAllIngredients(ingredientsRes.data);
 
-        if (suppliersRes.data.length > 0)
+        if (suppliersRes.data.length > 0) {
           setSupplierId(suppliersRes.data[0].id);
+        }
 
         if (ingredientsRes.data.length > 0) {
           const firstIngredient = ingredientsRes.data[0];
@@ -48,17 +49,40 @@ function ManualPOForm({ onSave, onCancel, loading }) {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (!supplierId) return;
+    const fetchCatalog = async () => {
+      try {
+        const res = await apiClient.get(`/supplier_ingredients_manage.php?action=get&supplier_id=${supplierId}`);
+        // Filter bahan yang memang disediakan supplier
+        setSupplierCatalog(res.data.filter(item => item.is_supplied === 1));
+      } catch (err) {
+        console.error("Gagal memuat katalog supplier", err);
+      }
+    };
+    fetchCatalog();
+  }, [supplierId]);
+
   const handleItemChange = (index, field, value) => {
     const newItems = [...items];
     newItems[index][field] = value;
 
     if (field === "ingredient_id") {
-      const selectedIngredient = allIngredients.find(
-        (ing) => ing.id.toString() === value.toString(),
+      // Cari di katalog supplier dulu
+      const catalogItem = supplierCatalog.find(
+        (c) => c.ingredient_id.toString() === value.toString()
       );
-      if (selectedIngredient) {
-        newItems[index]["price_per_unit"] =
-          parseFloat(selectedIngredient.latest_price) || "";
+      if (catalogItem) {
+        newItems[index]["price_per_unit"] = parseFloat(catalogItem.base_price) || 0;
+      } else {
+        // Fallback ke latest_price umum
+        const selectedIngredient = allIngredients.find(
+          (ing) => ing.id.toString() === value.toString(),
+        );
+        if (selectedIngredient) {
+          newItems[index]["price_per_unit"] =
+            parseFloat(selectedIngredient.latest_price) || "";
+        }
       }
     }
 
@@ -68,12 +92,16 @@ function ManualPOForm({ onSave, onCancel, loading }) {
   const handleAddItem = () => {
     if (allIngredients.length === 0) return;
     const firstIngredient = allIngredients[0];
+    // Coba cari harga dari katalog supplier untuk item pertama
+    const catalogItem = supplierCatalog.find(
+      (c) => c.ingredient_id.toString() === firstIngredient.id.toString()
+    );
     setItems([
       ...items,
       {
         ingredient_id: firstIngredient.id,
         quantity: "",
-        price_per_unit: parseFloat(firstIngredient.latest_price) || "",
+        price_per_unit: catalogItem ? parseFloat(catalogItem.base_price) : (parseFloat(firstIngredient.latest_price) || ""),
       },
     ]);
   };
@@ -119,10 +147,13 @@ function ManualPOForm({ onSave, onCancel, loading }) {
       maximumFractionDigits: 0,
     }).format(value);
 
-  const ingredientOptions = allIngredients.map((ing) => ({
-    value: ing.id,
-    label: ing.name,
-  }));
+  const ingredientOptions = allIngredients.map((ing) => {
+    const catalogItem = supplierCatalog.find(c => c.ingredient_id === ing.id);
+    return {
+      value: ing.id,
+      label: ing.name + (catalogItem ? ` (Tersedia - Rp ${catalogItem.base_price.toLocaleString('id-ID')})` : ''),
+    };
+  });
 
   return (
     <form onSubmit={handleSubmit}>

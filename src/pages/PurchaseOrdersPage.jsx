@@ -143,7 +143,7 @@ function PurchaseOrdersPage() {
         />
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Buat Purchase Order Manual">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Buat Purchase Order Manual" size="4xl">
         <ManualPOForm
             onSave={handleSaveManualPO}
             onCancel={() => setIsModalOpen(false)}
