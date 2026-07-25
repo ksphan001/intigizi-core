@@ -22,13 +22,14 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
 
   return (
     // Latar belakang gelap
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+    // Latar belakang gelap (dipastikan menutup 100% layar tanpa outline/celah)
+    <div className="fixed inset-0 top-0 left-0 w-full h-full bg-black/60 z-50 flex justify-center items-center p-4 outline-none border-none">
       {/* Kontainer Modal */}
-      <div className={`bg-white rounded-lg shadow-xl w-full ${sizeClasses[size]} flex flex-col max-h-[90vh]`}>
+      <div className={`bg-white rounded-lg shadow-2xl w-full ${sizeClasses[size]} flex flex-col max-h-[90vh] outline-none border-none`}>
         {/* Header Modal (Fixed) */}
         <div className="flex-shrink-0 flex justify-between items-center p-4 border-b">
           <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 focus:outline-none">
             <X size={24} />
           </button>
         </div>
