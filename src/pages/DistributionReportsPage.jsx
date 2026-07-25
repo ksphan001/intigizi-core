@@ -130,6 +130,24 @@ function DistributionReportsPage() {
       for (const key in formData) {
         data.append(key, formData[key] || "");
       }
+
+      // AMBIL KOORDINAT GPS UNTUK VALIDASI GEOFENCE
+      if (formData.status === 'Diterima' || formData.status === 'Sebagian Diterima') {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 6000,
+              maximumAge: 0
+            });
+          });
+          data.append("latitude", position.coords.latitude);
+          data.append("longitude", position.coords.longitude);
+        } catch (gpsError) {
+          console.warn("Gagal mendapatkan lokasi GPS untuk geofence", gpsError);
+        }
+      }
+
       if (newPhotos.length > 0) {
         newPhotos.forEach((photoFile) => {
           data.append("photos[]", photoFile);
