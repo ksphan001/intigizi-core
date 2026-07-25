@@ -290,8 +290,17 @@ function SuppliersPage() {
                 {paginatedSuppliers.length > 0 ? paginatedSuppliers.map((item) => (
                   <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
                     <th scope="row" className="px-6 py-4 font-medium text-gray-900">
-                      <div className="flex items-center gap-1.5">
-                        <span>{item.supplier_name}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold">{item.supplier_name}</span>
+                        {item.marketplace_id ? (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            B2B Marketplace
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gray-100 text-gray-600 border border-gray-200">
+                            Manual
+                          </span>
+                        )}
                         {!!item.is_verified && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-green-50 text-green-700 border border-green-200">
                             Verified
