@@ -24,7 +24,8 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
     total_beneficiaries: "",
     notes: "",
     quantity_received: "",
-    status: "Terjadwal", // PERBAIKAN: Default status 'Terjadwal'
+    status: "Terjadwal",
+    reported_by: "",
   });
 
   const [newPhotos, setNewPhotos] = useState([]);
@@ -36,17 +37,23 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
   const [beneficiaryCategories, setBeneficiaryCategories] = useState([]);
   const [beneficiaryBreakdown, setBeneficiaryBreakdown] = useState([]);
   const [scheduledMenu, setScheduledMenu] = useState(null);
+  const [drivers, setDrivers] = useState([]);
   const { showNotification } = useNotification();
 
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [pointsRes, categoriesRes] = await Promise.all([
+        const [pointsRes, categoriesRes, usersRes] = await Promise.all([
           apiClient.get("/distribution_points_get.php"),
           apiClient.get("/beneficiary_categories_get.php"),
+          apiClient.get("/users_get.php"),
         ]);
         setDistributionPoints(pointsRes.data || []);
         setBeneficiaryCategories(categoriesRes.data || []);
+        
+        // Filter users who have role_id = 6 (Tim Distribusi / Driver)
+        const driverList = (usersRes.data || []).filter(u => Number(u.role_id) === 6);
+        setDrivers(driverList);
       } catch (error) {
         console.error("Error fetching initial data:", error);
       }
@@ -65,7 +72,8 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
         total_beneficiaries: reportData.total_beneficiaries || "",
         notes: reportData.notes || "",
         quantity_received: reportData.quantity_received || "",
-        status: reportData.status || "Terjadwal", // Handle status yang ada
+        status: reportData.status || "Terjadwal",
+        reported_by: reportData.reported_by || "",
       });
       setScheduledMenu({
         id: reportData.menu_id,
@@ -83,7 +91,8 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
         total_beneficiaries: "",
         notes: "",
         quantity_received: "",
-        status: "Terjadwal", // Default baru
+        status: "Terjadwal",
+        reported_by: "",
       });
       setExistingPhotos([]);
       setNewPhotos([]);
@@ -200,15 +209,11 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 max-h-[75vh] overflow-y-auto pr-4 -mr-4"
+      className="space-y-5 max-h-[75vh] overflow-y-auto pr-2 -mr-2 no-scrollbar"
     >
       {/* --- CREATE MODE (JADWALKAN) --- */}
       {!isEditMode && (
-        <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-          <h3 className="font-semibold text-lg flex items-center">
-            <CalendarDays size={20} className="mr-3 text-intigizi-green" />
-            Jadwalkan Pengiriman
-          </h3>
+        <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="label-style">Tanggal</label>
@@ -233,27 +238,27 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
             </div>
           </div>
           <div>
-            <label className="label-style">Tujuan</label>
+            <label className="label-style">Tujuan Sekolah / PAUD</label>
             <SearchableSelect
               options={pointOptions}
               value={formData.distribution_point_id}
               onChange={(v) =>
                 setFormData((p) => ({ ...p, distribution_point_id: v }))
               }
-              placeholder="Pilih titik..."
+              placeholder="Pilih titik sekolah tujuan..."
             />
           </div>
 
           {beneficiaryBreakdown.length > 0 && (
             <div>
               <label className="label-style flex items-center">
-                <Users size={14} className="mr-2" /> Rincian Penerima Manfaat
+                <Users size={14} className="mr-2 text-intigizi-green" /> Rincian Penerima Manfaat
               </label>
-              <div className="mt-1 p-3 bg-white border rounded-md flex flex-wrap gap-x-4 gap-y-2">
+              <div className="mt-1 p-3 bg-gray-50 border rounded-xl flex flex-wrap gap-x-4 gap-y-2">
                 {beneficiaryBreakdown.map((item) => (
                   <span
                     key={item.name}
-                    className="text-xs font-medium text-gray-700"
+                    className="text-xs font-semibold text-gray-700"
                   >
                     {item.name}:{" "}
                     <span className="font-bold text-intigizi-green">
@@ -272,22 +277,54 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
               value={
                 scheduledMenu?.menu_name || "Tidak ada menu pada tanggal ini"
               }
-              className="input-style bg-gray-100"
+              className="input-style bg-gray-50 text-gray-650"
               disabled
             />
           </div>
+
           <div>
-            <label className="label-style">Jumlah Porsi Rencana</label>
-            <input
-              type="number"
-              name="quantity_sent"
-              value={formData.quantity_sent}
+            <label className="label-style">Petugas Driver / Kurir</label>
+            <select
+              name="reported_by"
+              value={formData.reported_by}
               onChange={handleChange}
-              className="input-style"
+              className="input-style bg-white"
               required
-              placeholder="Otomatis terisi"
-            />
+            >
+              <option value="">-- Pilih Driver / Kurir --</option>
+              {drivers.map(d => (
+                <option key={d.id} value={d.id}>{d.full_name} ({d.username})</option>
+              ))}
+            </select>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="label-style">Jumlah Porsi Rencana</label>
+              <input
+                type="number"
+                name="quantity_sent"
+                value={formData.quantity_sent}
+                onChange={handleChange}
+                className="input-style"
+                required
+                placeholder="Otomatis terisi"
+              />
+            </div>
+            <div>
+              <label className="label-style">Status Awal</label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="input-style bg-white"
+              >
+                <option value="Terjadwal">Terjadwal</option>
+                <option value="Dikirim">Dikirim</option>
+              </select>
+            </div>
+          </div>
+
           <div>
             <label className="label-style">Catatan Awal (Opsional)</label>
             <textarea
@@ -303,11 +340,7 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
 
       {/* --- EDIT MODE (UPDATE LAPORAN) --- */}
       {isEditMode && (
-        <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-          <h3 className="font-semibold text-lg flex items-center">
-            <Send size={20} className="mr-3 text-intigizi-green" />
-            Update Laporan Pengiriman
-          </h3>
+        <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="quantity_received" className="label-style">
@@ -341,11 +374,40 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
               </select>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="label-style">Petugas Driver / Kurir</label>
+              <select
+                name="reported_by"
+                value={formData.reported_by}
+                onChange={handleChange}
+                className="input-style bg-white"
+                required
+              >
+                <option value="">-- Pilih Driver / Kurir --</option>
+                {drivers.map(d => (
+                  <option key={d.id} value={d.id}>{d.full_name} ({d.username})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label-style">Jam Rencana Pengantaran</label>
+              <input
+                type="time"
+                name="delivery_time"
+                value={formData.delivery_time}
+                onChange={handleChange}
+                className="input-style"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="label-style">Catatan Tambahan</label>
             <textarea
               name="notes"
-              rows="3"
+              rows="2"
               value={formData.notes}
               onChange={handleChange}
               className="input-style"
@@ -353,15 +415,15 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
           </div>
           <div>
             <label className="label-style">Dokumentasi Foto</label>
-            <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+            <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-205 border-dashed rounded-xl bg-gray-50">
               <div className="space-y-1 text-center">
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                <Upload className="mx-auto h-10 w-10 text-gray-400" />
                 <div className="flex text-sm text-gray-600">
                   <label
                     htmlFor="photo-upload"
-                    className="relative cursor-pointer bg-white rounded-md font-medium text-intigizi-green hover:text-intigizi-green-dark focus-within:outline-none"
+                    className="relative cursor-pointer bg-transparent rounded-md font-bold text-intigizi-green hover:text-intigizi-green-dark focus-within:outline-none"
                   >
-                    <span>Unggah file baru</span>
+                    <span>Unggah file foto</span>
                     <input
                       id="photo-upload"
                       name="photos[]"
@@ -381,7 +443,7 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
                   <img
                     src={`${API_BASE_URL.replace("/app", "")}${photo.image_path}`}
                     alt="Dokumentasi"
-                    className="h-24 w-full object-cover rounded-md"
+                    className="h-20 w-full object-cover rounded-xl border"
                   />
                   <button
                     type="button"
@@ -397,7 +459,7 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
                   <img
                     src={preview}
                     alt={`Preview ${index}`}
-                    className="h-24 w-full object-cover rounded-md"
+                    className="h-20 w-full object-cover rounded-xl border"
                   />
                   <button
                     type="button"
@@ -413,19 +475,19 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
         </div>
       )}
 
-      <div className="flex justify-end space-x-2 pt-4">
-        <button type="button" onClick={onCancel} className="btn-secondary">
+      <div className="flex justify-end space-x-2 pt-4 border-t">
+        <button type="button" onClick={onCancel} className="btn-secondary h-[38px] px-5 rounded-xl font-bold text-xs">
           Batal
         </button>
         <button
           type="submit"
-          className="btn-primary"
+          className="btn-primary h-[38px] px-5 rounded-xl font-bold text-xs flex items-center justify-center min-w-[120px]"
           disabled={actionLoading || (!isEditMode && !formData.menu_id)}
         >
           {actionLoading ? (
-            <Loader2 className="animate-spin" />
+            <Loader2 className="animate-spin h-4 w-4" />
           ) : isEditMode ? (
-            "Simpan Update"
+            "Simpan Perubahan"
           ) : (
             "Simpan Jadwal"
           )}
