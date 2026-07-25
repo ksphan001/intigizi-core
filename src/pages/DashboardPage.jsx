@@ -442,7 +442,12 @@ function DashboardPage() {
           onClose={() => setIsPrintModalOpen(false)}
           distributions={trackingData?.distributions || []}
           date={new Date().toISOString().split("T")[0]}
-          driverName={user.name}
+          driverName={user.name || user.full_name}
+          kitchenName={trackingData?.main_kitchen?.name}
+          kitchenAddress={trackingData?.main_kitchen?.vendor_address}
+          kitchenPhone={trackingData?.main_kitchen?.pic_whatsapp}
+          directorName={trackingData?.main_kitchen?.director_name}
+          driverPhone={user.phone_number || (trackingData?.distributions || []).find(d => Number(d.courier_id) === Number(user?.id))?.courier_phone}
         />
       </div>
     );

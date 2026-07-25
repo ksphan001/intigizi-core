@@ -62,6 +62,8 @@ function DistributionReportsPage() {
     }
   }, [dates, showNotification]);
 
+  const [kitchenInfo, setKitchenInfo] = useState(null);
+
   useEffect(() => {
     fetchReports();
     return () => {
@@ -70,6 +72,18 @@ function DistributionReportsPage() {
       }
     };
   }, [fetchReports]);
+
+  useEffect(() => {
+    const fetchKitchenInfo = async () => {
+      try {
+        const response = await apiClient.get("/organization_get_settings.php");
+        setKitchenInfo(response.data);
+      } catch (error) {
+        console.warn("Gagal memuat profil dapur untuk kop surat", error);
+      }
+    };
+    fetchKitchenInfo();
+  }, []);
 
   // ... (Fungsi Live Tracking tetap sama) ...
   const startDelivery = () => {
@@ -431,6 +445,11 @@ function DistributionReportsPage() {
         distributions={reports}
         date={dates.start} // Gunakan start date sebagai perwakilan tanggal cetak
         driverName={selectedPrintDriver}
+        kitchenName={kitchenInfo?.kitchen_name || kitchenInfo?.name}
+        kitchenAddress={kitchenInfo?.kitchen_address}
+        kitchenPhone={kitchenInfo?.pic_whatsapp}
+        directorName={kitchenInfo?.director_name}
+        driverPhone={reports.find(r => r.reporter_name === selectedPrintDriver)?.reporter_phone}
       />
     </div>
   );

@@ -1,14 +1,29 @@
 import React, { useMemo } from "react";
 import { X, Printer } from "lucide-react";
 
-const PrintDeliveryOrderModal = ({ isOpen, onClose, distributions = [], date, kitchenName = "DAPUR GIZI UTAMA SPPG", driverName = "" }) => {
+const PrintDeliveryOrderModal = ({ 
+  isOpen, 
+  onClose, 
+  distributions = [], 
+  date, 
+  kitchenName = "DAPUR GIZI UTAMA SPPG", 
+  driverName = "",
+  kitchenAddress = "",
+  kitchenPhone = "",
+  directorName = "",
+  driverPhone = ""
+}) => {
   if (!isOpen) return null;
 
   // Filter pengiriman sesuai kurir jika nama kurir disertakan
   const filteredStops = useMemo(() => {
     let list = [...distributions];
     if (driverName) {
-      list = list.filter(d => d.courier_name === driverName || d.reported_by_name === driverName);
+      list = list.filter(d => 
+        d.courier_name === driverName || 
+        d.reported_by_name === driverName || 
+        d.reporter_name === driverName
+      );
     }
     // Urutkan berdasarkan waktu pengantaran jika ada
     return list.sort((a, b) => (a.delivery_time || "").localeCompare(b.delivery_time || ""));
@@ -61,7 +76,7 @@ const PrintDeliveryOrderModal = ({ isOpen, onClose, distributions = [], date, ki
             <div className="border-b-4 border-black pb-4 text-center">
               <h2 className="text-lg font-black tracking-wider uppercase">{kitchenName}</h2>
               <p className="text-xs text-gray-650 mt-1">Program Makan Bergizi Gratis (MBG) Nasional - Badan Gizi Nasional (BGN)</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Alamat Operasional SPPG Terdaftar | Hub: +62 811-XXXX-XXXX</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">{kitchenAddress || "Alamat Operasional SPPG Terdaftar"} | Hub: {kitchenPhone || "+62 811-XXXX-XXXX"}</p>
             </div>
 
             {/* Judul Dokumen */}
@@ -78,7 +93,7 @@ const PrintDeliveryOrderModal = ({ isOpen, onClose, distributions = [], date, ki
               </div>
               <div>
                 <p><span className="font-bold text-gray-600 inline-block w-24">Nama Kurir/Driver</span>: <span className="font-bold underline">{driverName || "Petugas Ditunjuk"}</span></p>
-                <p className="mt-1"><span className="font-bold text-gray-600 inline-block w-24">Status Tugas</span>: Distribusi Makanan Hangat</p>
+                <p className="mt-1"><span className="font-bold text-gray-600 inline-block w-24">No. Telp Driver</span>: {driverPhone || "-"}</p>
               </div>
             </div>
 
@@ -120,17 +135,17 @@ const PrintDeliveryOrderModal = ({ isOpen, onClose, distributions = [], date, ki
 
             {/* Tanda Tangan */}
             <div className="flex justify-between text-xs mt-12">
-              <div className="text-center w-40">
+              <div className="text-center w-45">
                 <p>Penerima Tugas,</p>
-                <div className="h-16"></div>
+                <div className="h-16 flex items-end justify-center"></div>
                 <p className="font-bold underline">{driverName || "Driver / Kurir"}</p>
                 <p className="text-[10px] text-gray-500">Personel Armada</p>
               </div>
-              <div className="text-center w-40">
+              <div className="text-center w-45">
                 <p>Mengetahui,</p>
-                <div className="h-16"></div>
-                <p className="font-bold underline">Kepala Dapur Gizi</p>
-                <p className="text-[10px] text-gray-500">Penanggung Jawab SPPG</p>
+                <div className="h-16 flex items-end justify-center"></div>
+                <p className="font-bold underline">{directorName || "Kepala Dapur Gizi"}</p>
+                <p className="text-[10px] text-gray-500">Ka. SPPG / Penanggung Jawab</p>
               </div>
             </div>
           </div>
