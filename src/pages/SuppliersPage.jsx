@@ -290,7 +290,14 @@ function SuppliersPage() {
                 {paginatedSuppliers.length > 0 ? paginatedSuppliers.map((item) => (
                   <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
                     <th scope="row" className="px-6 py-4 font-medium text-gray-900">
-                      <div>{item.supplier_name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span>{item.supplier_name}</span>
+                        {!!item.is_verified && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-green-50 text-green-700 border border-green-200">
+                            Verified
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-gray-400 font-normal">{item.address}</div>
                     </th>
                     <td className="px-6 py-4">
@@ -517,7 +524,14 @@ function SuppliersPage() {
               marketplaceSuppliers.map((item) => (
                 <div key={item.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                   <div className="min-w-0 flex-1">
-                    <h4 className="text-sm font-bold text-gray-800">{item.supplier_name}</h4>
+                    <h4 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                      <span>{item.supplier_name}</span>
+                      {!!item.is_verified && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-green-50 text-green-700 border border-green-200">
+                          Verified
+                        </span>
+                      )}
+                    </h4>
                     <p className="text-xs text-gray-500 mt-0.5">PIC: <span className="font-semibold text-gray-700">{item.contact_person}</span> | Telp: <span className="font-semibold text-gray-700">{item.phone_number}</span></p>
                     <p className="text-xs text-gray-400 truncate mt-1">Alamat: {item.address || '-'}</p>
                   </div>
