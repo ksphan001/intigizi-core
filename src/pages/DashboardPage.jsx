@@ -37,11 +37,13 @@ import {
   Navigation,
   StopCircle,
   CheckCircle2,
+  Printer,
 } from "lucide-react";
 import DistributionMap from "@/components/DistributionMap.jsx";
 import TrackingMap from "@/components/TrackingMap.jsx";
 import { useNotification } from "@/context/NotificationContext.jsx";
 import ConfirmationModal from "@/components/ConfirmationModal.jsx";
+import PrintDeliveryOrderModal from "@/components/PrintDeliveryOrderModal.jsx";
 
 const StatCard = ({ icon, title, value, loading }) => (
   <div className="bg-white p-5 rounded-xl shadow-md flex items-center space-x-4 transition-all hover:shadow-lg hover:-translate-y-1 border border-gray-100">
@@ -74,6 +76,7 @@ function DashboardPage() {
   const { showNotification } = useNotification();
   const [isDelivering, setIsDelivering] = useState(false);
   const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const watchIdRef = React.useRef(null);
 
   const startDelivery = () => {
@@ -325,6 +328,12 @@ function DashboardPage() {
               {isDelivering ? <StopCircle size={16} className="mr-1.5" /> : <Navigation size={16} className="mr-1.5" />}
               {isDelivering ? "Matikan Live" : "Mulai Pengantaran (Live)"}
             </button>
+            <button
+              onClick={() => setIsPrintModalOpen(true)}
+              className="h-[38px] flex items-center px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-750 text-white font-bold text-xs transition-all shadow-sm"
+            >
+              <Printer size={16} className="mr-1.5" /> Cetak Surat Jalan
+            </button>
             <Link
               to="/app/distribution-reports"
               className="h-[38px] flex items-center px-4 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 font-bold text-xs transition-all border border-gray-200"
@@ -426,6 +435,14 @@ function DashboardPage() {
           confirmText="Ya, Hentikan"
           confirmColor="bg-red-600 hover:bg-red-700"
           icon={<StopCircle size={16} className="mr-2" />}
+        />
+
+        <PrintDeliveryOrderModal
+          isOpen={isPrintModalOpen}
+          onClose={() => setIsPrintModalOpen(false)}
+          distributions={trackingData?.distributions || []}
+          date={new Date().toISOString().split("T")[0]}
+          driverName={user.name}
         />
       </div>
     );

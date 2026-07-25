@@ -2,7 +2,7 @@
 // Penjelasan: Halaman Laporan Distribusi.
 // UPDATE: Menambahkan handling status 'Terjadwal' pada badge.
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import apiClient from "@/services/api";
 import { useNotification } from "@/context/NotificationContext";
 import {
@@ -12,12 +12,14 @@ import {
   Camera,
   Navigation,
   StopCircle,
+  Printer,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import DistributionReportForm from "@/components/DistributionReportForm";
 import ImageGalleryModal from "@/components/ImageGalleryModal";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import PrintDeliveryOrderModal from "@/components/PrintDeliveryOrderModal";
 
 function DistributionReportsPage() {
   const [reports, setReports] = useState([]);
@@ -37,6 +39,14 @@ function DistributionReportsPage() {
   const [isDelivering, setIsDelivering] = useState(false);
   const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
   const watchIdRef = useRef(null);
+
+  // --- STATE CETAK SURAT TUGAS ---
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [selectedPrintDriver, setSelectedPrintDriver] = useState("");
+
+  const uniqueDrivers = useMemo(() => {
+    return Array.from(new Set(reports.map(r => r.reporter_name).filter(Boolean)));
+  }, [reports]);
 
   const fetchReports = useCallback(async () => {
     try {
@@ -249,6 +259,27 @@ function DistributionReportsPage() {
               className="mt-0 h-[38px] py-1 px-3.5 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-intigizi-green/40 focus:border-intigizi-green shadow-sm text-gray-700 font-medium"
             />
           </div>
+
+          <div className="flex items-center space-x-1.5 border-l pl-3 border-gray-200">
+            <select
+              value={selectedPrintDriver}
+              onChange={(e) => setSelectedPrintDriver(e.target.value)}
+              className="mt-0 h-[38px] py-1 px-3.5 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-intigizi-green/40 focus:border-intigizi-green shadow-sm text-gray-700 font-semibold"
+            >
+              <option value="">-- Semua Kurir --</option>
+              {uniqueDrivers.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setIsPrintModalOpen(true)}
+              className="h-[38px] px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center transition-colors shadow-sm"
+              title="Cetak Surat Tugas/Jalan"
+            >
+              <Printer size={16} className="mr-1.5" /> Surat Tugas
+            </button>
+          </div>
+
           <button
             onClick={() => handleOpenModal()}
             className="h-[38px] px-4 py-2 rounded-xl bg-intigizi-green text-white hover:bg-intigizi-green-dark text-xs font-bold flex items-center transition-colors shadow-sm"
@@ -392,6 +423,14 @@ function DistributionReportsPage() {
         confirmText="Ya, Hentikan"
         confirmColor="bg-red-600 hover:bg-red-700"
         icon={<StopCircle size={16} className="mr-2" />}
+      />
+
+      <PrintDeliveryOrderModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        distributions={reports}
+        date={dates.start} // Gunakan start date sebagai perwakilan tanggal cetak
+        driverName={selectedPrintDriver}
       />
     </div>
   );
