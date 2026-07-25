@@ -917,15 +917,24 @@ function RegisterPage() {
         );
       case "Vendor":
         return (
-          <VendorForm
-            formData={formData}
-            setFormData={setFormData}
-            handleRegister={handleRegister}
-            loading={loading}
-            regions={regions}
-            validationErrors={validationErrors}
-            vendorCategories={vendorCategories}
-          />
+          <div className="p-8 bg-white border border-gray-100 rounded-2xl text-center space-y-4 shadow-md">
+            <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto">
+              <Store size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800">Portal Supplier B2B Terpusat</h3>
+            <p className="text-gray-500 text-sm max-w-sm mx-auto leading-relaxed">
+              Untuk memberikan pengalaman pengadaan yang lebih baik, pendaftaran Mitra Supplier kini dipusatkan ke dalam platform **B2B Supplier Marketplace** kami.
+            </p>
+            <div className="pt-4">
+              <a
+                href="http://localhost:5174/register"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-md shadow-green-600/20 hover:shadow-green-600/30 hover:-translate-y-0.5"
+              >
+                <span>Buka Portal Supplier B2B</span>
+                <ArrowRight size={16} />
+              </a>
+            </div>
+          </div>
         );
       case "Calon Mitra":
         return (
