@@ -28,9 +28,7 @@ function ManualPOForm({ onSave, onCancel, loading }) {
         setAllSuppliers(suppliersRes.data);
         setAllIngredients(ingredientsRes.data);
 
-        if (suppliersRes.data.length > 0) {
-          setSupplierId(suppliersRes.data[0].id);
-        }
+        setSupplierId(""); // Default ke Belanja Manual (Beli Mandiri)
 
         if (ingredientsRes.data.length > 0) {
           const firstIngredient = ingredientsRes.data[0];
@@ -168,7 +166,7 @@ function ManualPOForm({ onSave, onCancel, loading }) {
     }).format(value);
 
   const ingredientOptions = React.useMemo(() => {
-    if (supplierCatalog.length === 0) {
+    if (!supplierId || supplierCatalog.length === 0) {
       return allIngredients.map((ing) => ({
         value: ing.id,
         label: ing.name,
@@ -183,7 +181,7 @@ function ManualPOForm({ onSave, onCancel, loading }) {
           label: `${ing.name} - Rp ${catalogItem.base_price.toLocaleString('id-ID')}`,
         };
       });
-  }, [allIngredients, supplierCatalog]);
+  }, [allIngredients, supplierCatalog, supplierId]);
 
   return (
     <form onSubmit={handleSubmit}>
@@ -200,8 +198,8 @@ function ManualPOForm({ onSave, onCancel, loading }) {
           value={supplierId}
           onChange={(e) => setSupplierId(e.target.value)}
           className="input-style bg-white"
-          required
         >
+          <option value="">-- Belanja Manual (Beli Mandiri / Tanpa Supplier) --</option>
           {allSuppliers.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name} ({s.type})
