@@ -199,7 +199,7 @@ function Sidebar({ isOpen, setIsOpen }) {
         <div className="flex-grow overflow-y-auto no-scrollbar">
           <nav className="space-y-4">
             {/* --- DASHBOARD STANDALONE (SELALU MUNCUL DI ATAS UNTUK AKSES CEPAT) --- */}
-            {isKitchenManagement && renderLink("/app/dashboard", Home, "Dashboard")}
+            {isKitchenManagement && renderLink(user && Number(user.role_id) === ROLES.TIM_DISTRIBUSI ? "/app/distribution-reports" : "/app/dashboard", Home, "Dashboard")}
             {hasAccess([ROLES.YAYASAN]) && renderLink("/app/manage-sppgs", Building, "Manajemen SPPG")}
             {isSuperAdmin && (
               <>

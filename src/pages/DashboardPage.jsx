@@ -69,6 +69,7 @@ function DashboardPage() {
     if (user) {
       const roleId = Number(user.role_id);
       if (roleId === 8) navigate("/app/admin/dashboard");
+      else if (roleId === 6) navigate("/app/distribution-reports");
       else if (roleId === 5)
         navigate(
           user.org_type === "Vendor"
