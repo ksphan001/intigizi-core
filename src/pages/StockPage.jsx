@@ -3,7 +3,7 @@ import apiClient from "@/services/api";
 import PageHeader from "@/components/PageHeader.jsx";
 import Pagination from "@/components/Pagination.jsx";
 import Modal from "@/components/Modal.jsx";
-import { Search, Info, AlertTriangle, Loader2 } from "lucide-react";
+import { Search, Info, AlertTriangle, Loader2, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
 
@@ -32,6 +32,10 @@ function StockPage() {
   const [historyData, setHistoryData] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // --- STATE PREDIKSI STOK KRITIS ---
+  const [predictiveData, setPredictiveData] = useState(null);
+  const [predictiveLoading, setPredictiveLoading] = useState(false);
+
   // States for damaged stock report modal
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -59,6 +63,38 @@ function StockPage() {
     }
   }, [activeTab, fetchHistory]);
 
+  const fetchPredictive = useCallback(async () => {
+    try {
+      setPredictiveLoading(true);
+      const response = await apiClient.get("/stock_predictive_alert.php");
+      setPredictiveData(response.data);
+    } catch (err) {
+      console.error("Gagal memuat data prediksi stok.", err);
+    } finally {
+      setPredictiveLoading(false);
+    }
+  }, []);
+
+  const handleAutoReorder = async () => {
+    if (!predictiveData || !predictiveData.deficits || predictiveData.deficits.length === 0) return;
+    if (!window.confirm("Apakah Anda yakin ingin memesan secara otomatis seluruh bahan baku yang kurang ke supplier termurah?")) return;
+    
+    setActionLoading(true);
+    try {
+      const response = await apiClient.post("/procurement_create_po_for_deficits.php", {
+        proposal_id: predictiveData.proposal?.id,
+        items: predictiveData.deficits
+      });
+      showNotification(response.data.message || "Pemesanan PO otomatis berhasil dibuat.", "success");
+      fetchStock();
+      fetchPredictive();
+    } catch (err) {
+      showNotification(err.response?.data?.message || "Gagal memproses pemesanan otomatis.", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const fetchStock = useCallback(async () => {
     try {
       setLoading(true);
@@ -73,7 +109,8 @@ function StockPage() {
 
   useEffect(() => {
     fetchStock();
-  }, [fetchStock]);
+    fetchPredictive();
+  }, [fetchStock, fetchPredictive]);
 
   const handleOpenReportModal = () => {
     setSelectedItem(null);
@@ -211,6 +248,47 @@ function StockPage() {
           </button>
         )}
       </div>
+
+      {/* Peringatan Stok Kritis Terdeteksi */}
+      {predictiveData?.deficits && predictiveData.deficits.length > 0 && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 p-5 rounded-2xl shadow-sm animate-fade-in flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-start">
+            <div className="bg-amber-100 p-2 rounded-xl mr-4 text-amber-700 mt-1 md:mt-0">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <h4 className="font-bold text-amber-800 text-sm">Peringatan Defisit Stok Bahan Baku!</h4>
+              <p className="text-xs text-amber-700 mt-1">
+                Terdeteksi <span className="font-bold text-amber-900">{predictiveData.deficits.length} bahan gizi</span> yang kurang untuk menopang rencana menu terjadwal pada proposal <span className="font-bold text-amber-900">{predictiveData.proposal?.proposal_code}</span>.
+              </p>
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                {predictiveData.deficits.slice(0, 4).map(d => (
+                  <span key={d.ingredient_id} className="text-[10px] font-bold bg-amber-100 text-amber-850 px-2 py-0.5 rounded-lg border border-amber-200">
+                    {d.ingredient_name}: -{d.deficit_qty} {d.unit_symbol}
+                  </span>
+                ))}
+                {predictiveData.deficits.length > 4 && (
+                  <span className="text-[10px] font-bold text-amber-700 align-middle pt-0.5">
+                    +{predictiveData.deficits.length - 4} lainnya
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleAutoReorder}
+            disabled={actionLoading}
+            className="w-full md:w-auto py-2.5 px-4 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            {actionLoading ? (
+              <Loader2 className="animate-spin h-3.5 w-3.5" />
+            ) : (
+              <ShoppingCart size={14} />
+            )}
+            <span>Belanja Bahan yang Kurang</span>
+          </button>
+        </div>
+      )}
 
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="mb-4 relative">

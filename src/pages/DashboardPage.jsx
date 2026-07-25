@@ -68,6 +68,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [kitchenInfo, setKitchenInfo] = useState(null);
+  const [predictiveData, setPredictiveData] = useState(null);
 
   // --- STATE LIVE TRACKING MULTI-KURIR ---
   const [trackingData, setTrackingData] = useState(null);
@@ -178,8 +179,14 @@ function DashboardPage() {
         if (selectedSppgId) {
           params.sppg_id = selectedSppgId;
         }
-        const summaryRes = await apiClient.get("/dashboard_summary.php", { params });
+        const [summaryRes, predictiveRes] = await Promise.all([
+          apiClient.get("/dashboard_summary.php", { params }),
+          apiClient.get("/stock_predictive_alert.php").catch(() => null)
+        ]);
         setSummary(summaryRes.data);
+        if (predictiveRes) {
+          setPredictiveData(predictiveRes.data);
+        }
       } catch (err) {
         setError("Gagal memuat data dashboard.");
       } finally {
@@ -478,6 +485,30 @@ function DashboardPage() {
           Berikut adalah ringkasan operasional dapur Anda, {user?.username}.
         </p>
       </div>
+
+      {/* Peringatan Defisit Stok Kritis */}
+      {predictiveData?.deficits && predictiveData.deficits.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl shadow-sm animate-fade-in flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-start">
+            <div className="bg-amber-100 p-2.5 rounded-xl mr-4 text-amber-700 mt-1 sm:mt-0">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <h4 className="font-bold text-amber-800 text-sm">Peringatan Defisit Stok Bahan Baku!</h4>
+              <p className="text-xs text-amber-700 mt-1">
+                Terdapat <span className="font-bold text-amber-900">{predictiveData.deficits.length} bahan baku gizi</span> yang kurang untuk menopang rencana menu terjadwal ({predictiveData.proposal?.proposal_code}).
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/app/stock"
+            className="w-full sm:w-auto text-center py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
+          >
+            <span>Tinjau & Pesan Sekarang</span>
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+      )}
 
       {/* --- BARIS 1: KPI Cards --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
