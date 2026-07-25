@@ -105,23 +105,18 @@ function TrackingMap({ mainKitchen, distributions, couriers = [] }) {
     }
   }, [isLoaded]);
 
-  if (loadError) return <div>Gagal memuat Google Maps.</div>;
-  if (!isLoaded || !icons)
-    return (
-      <div className="flex justify-center items-center h-full w-full">
-        <Loader2 className="animate-spin" />
-      </div>
-    );
+  const kitchenPos = useMemo(() => {
+    return mainKitchen
+      ? {
+          lat: parseFloat(mainKitchen.latitude),
+          lng: parseFloat(mainKitchen.longitude),
+        }
+      : null;
+  }, [mainKitchen]);
 
-  const kitchenPos = mainKitchen
-    ? {
-        lat: parseFloat(mainKitchen.latitude),
-        lng: parseFloat(mainKitchen.longitude),
-      }
-    : null;
-
-  // Pastikan couriers adalah array
-  const activeCouriers = Array.isArray(couriers) ? couriers : [];
+  const activeCouriers = useMemo(() => {
+    return Array.isArray(couriers) ? couriers : [];
+  }, [couriers]);
 
   const [directionsResponse, setDirectionsResponse] = useState(null);
   const [routeMetrics, setRouteMetrics] = useState({ distance: "", duration: "" });
@@ -204,6 +199,14 @@ function TrackingMap({ mainKitchen, distributions, couriers = [] }) {
 
     return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints}&travelmode=driving`;
   }, [kitchenPos, distributions]);
+
+  if (loadError) return <div>Gagal memuat Google Maps.</div>;
+  if (!isLoaded || !icons)
+    return (
+      <div className="flex justify-center items-center h-full w-full">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
 
   return (
     <div className="relative w-full h-full">
