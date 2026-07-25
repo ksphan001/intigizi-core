@@ -33,7 +33,49 @@ function SuppliersPage() {
   const [allIngredients, setAllIngredients] = useState([]);
   const [selectedIngToAdd, setSelectedIngToAdd] = useState('');
 
+  // Marketplace Integration States
+  const [isMarketplaceModalOpen, setIsMarketplaceModalOpen] = useState(false);
+  const [marketplaceSuppliers, setMarketplaceSuppliers] = useState([]);
+  const [marketplaceLoading, setMarketplaceLoading] = useState(false);
+  const [marketplaceSearch, setMarketplaceSearch] = useState('');
+  const [connectingId, setConnectingId] = useState(null);
+
   const { showNotification } = useNotification();
+
+  const fetchMarketplaceSuppliers = async (searchVal = '') => {
+    setMarketplaceLoading(true);
+    try {
+      const url = `http://localhost/intigizi-supplier-api/app/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      setMarketplaceSuppliers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Gagal mengambil data dari Marketplace", err);
+      showNotification("Gagal mengambil daftar supplier dari Marketplace.", "error");
+    } finally {
+      setMarketplaceLoading(false);
+    }
+  };
+
+  const openMarketplaceModal = () => {
+    setIsMarketplaceModalOpen(true);
+    setMarketplaceSearch('');
+    fetchMarketplaceSuppliers('');
+  };
+
+  const handleConnectSupplier = async (marketplaceId) => {
+    setConnectingId(marketplaceId);
+    try {
+      const response = await apiClient.post('/sync_marketplace_supplier.php', { marketplace_id: marketplaceId });
+      showNotification(response.data.message || "Berhasil menghubungkan supplier!", "success");
+      fetchSuppliers();
+      setIsMarketplaceModalOpen(false);
+    } catch (err) {
+      showNotification(err.response?.data?.message || "Gagal menghubungkan supplier dari Marketplace.", "error");
+    } finally {
+      setConnectingId(null);
+    }
+  };
 
   const getWhatsAppLink = (phone) => {
     if (!phone) return '';
@@ -201,19 +243,35 @@ function SuppliersPage() {
     <div>
       <PageHeader
         title="Manajemen Supplier"
-        buttonText="Tambah Supplier"
-        onButtonClick={openAddModal}
       />
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="mb-4 relative">
-          <input
-            type="text"
-            placeholder="Cari nama supplier..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-style w-full pl-10"
-          />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Cari nama supplier..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input-style w-full pl-10"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={openAddModal}
+              className="btn-primary flex items-center justify-center gap-1.5 whitespace-nowrap"
+            >
+              <Plus size={18} />
+              <span>Tambah Manual</span>
+            </button>
+            <button
+              onClick={openMarketplaceModal}
+              className="flex items-center justify-center gap-1.5 px-4 py-2 bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 rounded-xl text-sm font-bold transition-all whitespace-nowrap shadow-sm"
+            >
+              <Plus size={18} />
+              <span>Hubungkan Marketplace</span>
+            </button>
+          </div>
         </div>
 
         {loading ? <p>Memuat data...</p> : (
@@ -423,6 +481,63 @@ function SuppliersPage() {
         title="Konfirmasi Hapus"
         message="Apakah Anda yakin ingin menghapus supplier ini?"
       />
+
+      <Modal
+        isOpen={isMarketplaceModalOpen}
+        onClose={() => setIsMarketplaceModalOpen(false)}
+        title="Hubungkan Supplier Dari Marketplace B2B"
+        size="3xl"
+      >
+        <div className="space-y-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Cari nama supplier di marketplace..."
+              value={marketplaceSearch}
+              onChange={(e) => {
+                setMarketplaceSearch(e.target.value);
+                fetchMarketplaceSuppliers(e.target.value);
+              }}
+              className="input-style w-full pl-10"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          </div>
+
+          <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-150 rounded-2xl no-scrollbar">
+            {marketplaceLoading ? (
+              <div className="p-8 text-center flex justify-center items-center gap-2 text-gray-500">
+                <Loader2 className="animate-spin text-green-600" size={20} />
+                <span>Mencari di marketplace...</span>
+              </div>
+            ) : marketplaceSuppliers.length === 0 ? (
+              <div className="p-8 text-center text-gray-400 italic">
+                Tidak ada supplier ditemukan di Marketplace.
+              </div>
+            ) : (
+              marketplaceSuppliers.map((item) => (
+                <div key={item.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-bold text-gray-800">{item.supplier_name}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">PIC: <span className="font-semibold text-gray-700">{item.contact_person}</span> | Telp: <span className="font-semibold text-gray-700">{item.phone_number}</span></p>
+                    <p className="text-xs text-gray-400 truncate mt-1">Alamat: {item.address || '-'}</p>
+                  </div>
+                  <button
+                    onClick={() => handleConnectSupplier(item.id)}
+                    disabled={connectingId === item.id}
+                    className="px-3.5 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shrink-0"
+                  >
+                    {connectingId === item.id ? (
+                      <Loader2 className="animate-spin" size={12} />
+                    ) : (
+                      'Hubungkan'
+                    )}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
