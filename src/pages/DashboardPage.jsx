@@ -67,6 +67,7 @@ function DashboardPage() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [kitchenInfo, setKitchenInfo] = useState(null);
 
   // --- STATE LIVE TRACKING MULTI-KURIR ---
   const [trackingData, setTrackingData] = useState(null);
@@ -148,6 +149,20 @@ function DashboardPage() {
       else if (roleId === 10) navigate("/app/funding/dashboard");
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    const fetchKitchenInfo = async () => {
+      try {
+        const response = await apiClient.get("/organization_get_settings.php");
+        setKitchenInfo(response.data);
+      } catch (error) {
+        console.warn("Gagal memuat profil dapur untuk kop surat", error);
+      }
+    };
+    if (user?.organization_id) {
+      fetchKitchenInfo();
+    }
+  }, [user]);
 
   useEffect(() => {
     // Restore live sharing state from localStorage
@@ -443,10 +458,10 @@ function DashboardPage() {
           distributions={trackingData?.distributions || []}
           date={new Date().toISOString().split("T")[0]}
           driverName={user.name || user.full_name}
-          kitchenName={trackingData?.main_kitchen?.name}
-          kitchenAddress={trackingData?.main_kitchen?.vendor_address}
-          kitchenPhone={trackingData?.main_kitchen?.pic_whatsapp}
-          directorName={trackingData?.main_kitchen?.director_name}
+          kitchenName={kitchenInfo?.kitchen_name || kitchenInfo?.name || trackingData?.main_kitchen?.name}
+          kitchenAddress={kitchenInfo?.kitchen_address || trackingData?.main_kitchen?.vendor_address}
+          kitchenPhone={kitchenInfo?.pic_whatsapp || trackingData?.main_kitchen?.pic_whatsapp}
+          directorName={kitchenInfo?.director_name || trackingData?.main_kitchen?.director_name}
           driverPhone={user.phone_number || (trackingData?.distributions || []).find(d => Number(d.courier_id) === Number(user?.id))?.courier_phone}
         />
       </div>
