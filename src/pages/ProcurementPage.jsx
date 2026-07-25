@@ -403,7 +403,7 @@ function ProcurementPage() {
                           <option value="">-- Belanja Mandiri (Beli Manual) --</option>
                           {(priceComparisons[item.ingredient_id] || []).map(opt => (
                             <option key={opt.supplier_id} value={opt.supplier_id}>
-                              {opt.supplier_name} {opt.is_verified ? "✓" : ""} - Rp {opt.price.toLocaleString('id-ID')}
+                              {opt.supplier_name} {opt.is_verified ? "✓" : ""} - Rp {opt.price.toLocaleString('id-ID')}{opt.distance_km !== null ? ` (${opt.distance_km} km)` : ''}
                             </option>
                           ))}
                         </select>
