@@ -211,7 +211,7 @@ function DistributionReportsPage() {
             ) : (
               <Navigation size={16} className="mr-1.5" />
             )}
-            {isDelivering ? "Stop Live Antar" : "Mulai Pengantaran (Live)"}
+            {isDelivering ? "Stop Live" : "Antar Live"}
           </button>
 
           <div className="flex items-center space-x-1.5">
