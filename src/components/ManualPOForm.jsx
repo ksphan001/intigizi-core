@@ -63,6 +63,26 @@ function ManualPOForm({ onSave, onCancel, loading }) {
     fetchCatalog();
   }, [supplierId]);
 
+  useEffect(() => {
+    if (supplierCatalog.length > 0 && items.length > 0) {
+      // Cek apakah item yang saat ini dipilih ada di katalog baru
+      const newItems = items.map(item => {
+        const isAvailable = supplierCatalog.some(c => c.ingredient_id.toString() === item.ingredient_id.toString());
+        if (!isAvailable) {
+          // Reset ke item pertama di katalog supplier terpilih
+          const firstCatalog = supplierCatalog[0];
+          return {
+            ingredient_id: firstCatalog.ingredient_id,
+            quantity: item.quantity,
+            price_per_unit: parseFloat(firstCatalog.base_price) || 0
+          };
+        }
+        return item;
+      });
+      setItems(newItems);
+    }
+  }, [supplierCatalog]);
+
   const handleItemChange = (index, field, value) => {
     const newItems = [...items];
     newItems[index][field] = value;
@@ -147,13 +167,23 @@ function ManualPOForm({ onSave, onCancel, loading }) {
       maximumFractionDigits: 0,
     }).format(value);
 
-  const ingredientOptions = allIngredients.map((ing) => {
-    const catalogItem = supplierCatalog.find(c => c.ingredient_id === ing.id);
-    return {
-      value: ing.id,
-      label: ing.name + (catalogItem ? ` (Tersedia - Rp ${catalogItem.base_price.toLocaleString('id-ID')})` : ''),
-    };
-  });
+  const ingredientOptions = React.useMemo(() => {
+    if (supplierCatalog.length === 0) {
+      return allIngredients.map((ing) => ({
+        value: ing.id,
+        label: ing.name,
+      }));
+    }
+    return allIngredients
+      .filter((ing) => supplierCatalog.some((c) => c.ingredient_id === ing.id))
+      .map((ing) => {
+        const catalogItem = supplierCatalog.find((c) => c.ingredient_id === ing.id);
+        return {
+          value: ing.id,
+          label: `${ing.name} - Rp ${catalogItem.base_price.toLocaleString('id-ID')}`,
+        };
+      });
+  }, [allIngredients, supplierCatalog]);
 
   return (
     <form onSubmit={handleSubmit}>
