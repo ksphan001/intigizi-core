@@ -61,16 +61,36 @@ function ProcurementPage() {
     fetchProcurementDetails();
   }, [fetchProcurementDetails]);
 
-  const handleOpenPOCreationModal = () => {
+  const [priceComparisons, setPriceComparisons] = useState({});
+
+  const handleOpenPOCreationModal = async () => {
+    setActionLoading(true);
+    let comparisons = {};
+    try {
+      const compRes = await apiClient.get('/procurement_compare_prices.php');
+      comparisons = compRes.data || {};
+      setPriceComparisons(comparisons);
+    } catch (err) {
+      console.error("Gagal mengambil data perbandingan harga", err);
+    } finally {
+      setActionLoading(false);
+    }
+
     const itemsToOrder = procurementDetails.procurement_items
       .filter((item) => item.remaining > 0)
-      .map((item) => ({
-        ingredient_id: item.ingredient_id,
-        name: item.ingredient_name,
-        quantity: item.remaining.toFixed(2),
-        price: item.latest_price || 0,
-        unit_symbol: item.unit_symbol,
-      }));
+      .map((item) => {
+        const options = comparisons[item.ingredient_id] || [];
+        const bestOption = options[0] || null; // Opsi termurah (pertama dari sorted list)
+        
+        return {
+          ingredient_id: item.ingredient_id,
+          name: item.ingredient_name,
+          quantity: item.remaining.toFixed(2),
+          price: bestOption ? bestOption.price : (item.latest_price || 0),
+          unit_symbol: item.unit_symbol,
+          selected_supplier_id: bestOption ? bestOption.supplier_id : "", // Kosong berarti Belanja Mandiri
+        };
+      });
 
     if (itemsToOrder.length === 0) {
       showNotification(
@@ -80,9 +100,6 @@ function ProcurementPage() {
       return;
     }
 
-    if (suppliers.length > 0) {
-      setSelectedSupplier(suppliers[0].id);
-    }
     setPoItems(itemsToOrder);
     setIsModalOpen(true);
   };
@@ -97,12 +114,21 @@ function ProcurementPage() {
     setPoItems(poItems.filter((_, i) => i !== index));
   };
 
-  const handleSubmitPO = async () => {
-    if (!selectedSupplier) {
-      showNotification("Silakan pilih pemasok terlebih dahulu.", "warning");
-      return;
-    }
+  const handleAutoSelectCheapest = () => {
+    const newItems = poItems.map(item => {
+      const options = priceComparisons[item.ingredient_id] || [];
+      const bestOption = options[0] || null;
+      return {
+        ...item,
+        selected_supplier_id: bestOption ? bestOption.supplier_id : "",
+        price: bestOption ? bestOption.price : item.price
+      };
+    });
+    setPoItems(newItems);
+    showNotification("Berhasil merekomendasikan supplier dengan harga termurah.", "success");
+  };
 
+  const handleSubmitPO = async () => {
     const itemsWithQuantity = poItems.filter(
       (item) => parseFloat(item.quantity) > 0,
     );
@@ -114,14 +140,43 @@ function ProcurementPage() {
       return;
     }
 
+    // Kelompokkan item berdasarkan supplier_id
+    const groups = {};
+    itemsWithQuantity.forEach(item => {
+      const suppId = item.selected_supplier_id;
+      if (!suppId) return; // Lewati Belanja Mandiri
+      if (!groups[suppId]) {
+        groups[suppId] = [];
+      }
+      groups[suppId].push({
+        ingredient_id: item.ingredient_id,
+        quantity: item.quantity,
+        price: item.price
+      });
+    });
+
+    const totalGroups = Object.keys(groups).length;
+    if (totalGroups === 0) {
+      showNotification("Semua item diatur ke Belanja Mandiri. Tidak ada PO B2B yang dibuat.", "info");
+      setIsModalOpen(false);
+      setIsConfirmOpen(false);
+      return;
+    }
+
     setActionLoading(true);
     try {
-      await apiClient.post("/procurement_create_po.php", {
-        proposal_id: proposalId,
-        supplier_id: selectedSupplier,
-        items: itemsWithQuantity,
-      });
-      showNotification("Purchase Order berhasil dibuat.", "success");
+      // Kirim request PO untuk setiap kelompok supplier secara parallel
+      await Promise.all(
+        Object.keys(groups).map(suppId => 
+          apiClient.post("/procurement_create_po.php", {
+            proposal_id: proposalId,
+            supplier_id: parseInt(suppId),
+            items: groups[suppId]
+          })
+        )
+      );
+      
+      showNotification(`${totalGroups} Purchase Order berhasil dibuat dan dikirim ke supplier.`, "success");
       setIsModalOpen(false);
       setIsConfirmOpen(false);
       fetchProcurementDetails(); // Refresh data
@@ -288,26 +343,18 @@ function ProcurementPage() {
         size="4xl"
       >
         <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="supplier"
-              className="block text-sm font-medium text-gray-700 mb-1"
+          <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <div>
+              <h4 className="text-sm font-bold text-gray-800">Alokasi Supplier & Banding Harga</h4>
+              <p className="text-xs text-gray-550 mt-0.5">Pilih supplier terbaik untuk setiap bahan gizi, atau beli manual (Belanja Mandiri).</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAutoSelectCheapest}
+              className="px-3.5 py-1.5 bg-green-50 hover:bg-green-150 text-green-700 font-bold border border-green-200 rounded-lg text-xs transition-colors flex items-center gap-1.5"
             >
-              Pilih Pemasok
-            </label>
-            <select
-              id="supplier"
-              value={selectedSupplier}
-              onChange={(e) => setSelectedSupplier(e.target.value)}
-              className="input-style bg-white w-full"
-            >
-              <option value="">-- Pilih Pemasok --</option>
-              {suppliers.map((sup) => (
-                <option key={sup.id} value={sup.id}>
-                  {sup.name} ({sup.type})
-                </option>
-              ))}
-            </select>
+              <span>Rekomendasi Termurah</span>
+            </button>
           </div>
 
           <div className="border rounded-lg border-gray-200">
@@ -317,6 +364,9 @@ function ProcurementPage() {
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase">
                       Bahan
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase w-72">
+                      Pemasok & Banding Harga
                     </th>
                     <th className="px-4 py-2 text-right text-xs font-bold text-gray-700 uppercase">
                       Kuantitas
@@ -334,6 +384,29 @@ function ProcurementPage() {
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-4 py-2 text-sm font-medium text-gray-800">
                         {item.name}
+                      </td>
+                      <td className="px-4 py-2">
+                        <select
+                          value={item.selected_supplier_id}
+                          onChange={(e) => {
+                            const selectedSuppId = e.target.value;
+                            const options = priceComparisons[item.ingredient_id] || [];
+                            const foundOption = options.find(o => o.supplier_id === parseInt(selectedSuppId));
+                            
+                            const newItems = [...poItems];
+                            newItems[index].selected_supplier_id = selectedSuppId;
+                            newItems[index].price = foundOption ? foundOption.price : 0;
+                            setPoItems(newItems);
+                          }}
+                          className="input-style text-xs py-1 px-2.5 w-full bg-white font-medium"
+                        >
+                          <option value="">-- Belanja Mandiri (Beli Manual) --</option>
+                          {(priceComparisons[item.ingredient_id] || []).map(opt => (
+                            <option key={opt.supplier_id} value={opt.supplier_id}>
+                              {opt.supplier_name} {opt.is_verified ? "✓" : ""} - Rp {opt.price.toLocaleString('id-ID')}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="px-4 py-2">
                         <div className="relative">
@@ -364,7 +437,8 @@ function ProcurementPage() {
                             onChange={(e) =>
                               handleItemChange(index, "price", e.target.value)
                             }
-                            className="input-style pl-8 w-36 ml-auto text-right"
+                            disabled={!!item.selected_supplier_id}
+                            className={`input-style pl-8 w-36 ml-auto text-right ${item.selected_supplier_id ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}`}
                           />
                           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 text-sm font-medium">
                             Rp
