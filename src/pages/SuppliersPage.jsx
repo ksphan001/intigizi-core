@@ -45,7 +45,7 @@ function SuppliersPage() {
   const fetchMarketplaceSuppliers = async (searchVal = '') => {
     setMarketplaceLoading(true);
     try {
-      const url = `http://localhost/intigizi-supplier-api/app/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
+      const url = `http://intigizi-supplier-api.test/app/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
       const res = await fetch(url);
       const data = await res.json();
       setMarketplaceSuppliers(Array.isArray(data) ? data : []);

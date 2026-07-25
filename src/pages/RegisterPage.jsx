@@ -927,7 +927,7 @@ function RegisterPage() {
             </p>
             <div className="pt-4">
               <a
-                href="http://localhost:5174/register"
+                href="http://intigizi-supplier-core.test/register"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-md shadow-green-600/20 hover:shadow-green-600/30 hover:-translate-y-0.5"
               >
                 <span>Buka Portal Supplier B2B</span>
