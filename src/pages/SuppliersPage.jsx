@@ -352,8 +352,18 @@ function SuppliersPage() {
                         <BookOpen size={14} />
                         <span>Katalog</span>
                       </button>
-                      <button onClick={() => openEditModal(item)} className="p-1.5 text-blue-600 hover:text-blue-800 border border-transparent hover:border-gray-200 rounded-lg transition-all"><Edit size={16}/></button>
-                      <button onClick={() => openDeleteConfirm(item.id)} className="p-1.5 text-red-600 hover:text-red-800 border border-transparent hover:border-gray-200 rounded-lg transition-all"><Trash2 size={16}/></button>
+                      {!item.marketplace_id ? (
+                        <button onClick={() => openEditModal(item)} className="p-1.5 text-blue-600 hover:text-blue-800 border border-transparent hover:border-gray-200 rounded-lg transition-all" title="Edit Profil Supplier"><Edit size={16}/></button>
+                      ) : (
+                        <span className="p-1.5 text-gray-300 cursor-not-allowed" title="Profil Supplier Marketplace Terpusat (Tidak Dapat Diedit Dapur)"><Edit size={16}/></span>
+                      )}
+                      <button 
+                        onClick={() => openDeleteConfirm(item.id)} 
+                        className="p-1.5 text-red-600 hover:text-red-800 border border-transparent hover:border-gray-200 rounded-lg transition-all" 
+                        title={item.marketplace_id ? "Putuskan Hubungan Marketplace" : "Hapus Supplier"}
+                      >
+                        <Trash2 size={16}/>
+                      </button>
                     </td>
                   </tr>
                 )) : (
