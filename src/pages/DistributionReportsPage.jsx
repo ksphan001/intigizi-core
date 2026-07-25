@@ -197,45 +197,45 @@ function DistributionReportsPage() {
       <div className="flex justify-between items-center mb-6">
         <PageHeader title="Laporan Distribusi" />
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3.5">
           <button
             onClick={handleToggleDelivery}
-            className={`flex items-center px-4 py-2 rounded-lg font-semibold transition-all shadow-md ${
+            className={`h-[38px] flex items-center px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm ${
               isDelivering
                 ? "bg-red-600 text-white hover:bg-red-700 animate-pulse"
                 : "bg-intigizi-orange text-white hover:bg-opacity-90"
             }`}
           >
             {isDelivering ? (
-              <StopCircle size={20} className="mr-2" />
+              <StopCircle size={16} className="mr-1.5" />
             ) : (
-              <Navigation size={20} className="mr-2" />
+              <Navigation size={16} className="mr-1.5" />
             )}
             {isDelivering ? "Stop Live Antar" : "Mulai Pengantaran (Live)"}
           </button>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5">
             <input
               type="date"
               name="start"
               value={dates.start}
               onChange={handleDateChange}
-              className="input-style"
+              className="mt-0 h-[38px] py-1 px-3.5 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-intigizi-green/40 focus:border-intigizi-green shadow-sm text-gray-700 font-medium"
             />
-            <span>-</span>
+            <span className="text-gray-400 font-bold">-</span>
             <input
               type="date"
               name="end"
               value={dates.end}
               onChange={handleDateChange}
-              className="input-style"
+              className="mt-0 h-[38px] py-1 px-3.5 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-intigizi-green/40 focus:border-intigizi-green shadow-sm text-gray-700 font-medium"
             />
           </div>
           <button
             onClick={() => handleOpenModal()}
-            className="btn-primary flex items-center"
+            className="h-[38px] px-4 py-2 rounded-xl bg-intigizi-green text-white hover:bg-intigizi-green-dark text-xs font-bold flex items-center transition-colors shadow-sm"
           >
-            <Plus size={20} className="mr-2" /> Jadwalkan
+            <Plus size={16} className="mr-1.5" /> Jadwalkan
           </button>
         </div>
       </div>
