@@ -227,7 +227,7 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
               />
             </div>
             <div>
-              <label className="label-style">Jam Pengantaran (Rencana)</label>
+              <label className="label-style">Jam Rencana</label>
               <input
                 type="time"
                 name="delivery_time"
@@ -344,7 +344,7 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="quantity_received" className="label-style">
-                Jumlah Porsi Diterima
+                Porsi Diterima
               </label>
               <input
                 type="number"
@@ -377,7 +377,7 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="label-style">Petugas Driver / Kurir</label>
+              <label className="label-style">Driver / Kurir</label>
               <select
                 name="reported_by"
                 value={formData.reported_by}
@@ -392,7 +392,7 @@ function DistributionReportForm({ reportData, onSave, onCancel }) {
               </select>
             </div>
             <div>
-              <label className="label-style">Jam Rencana Pengantaran</label>
+              <label className="label-style">Jam Rencana</label>
               <input
                 type="time"
                 name="delivery_time"
