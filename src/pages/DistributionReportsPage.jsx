@@ -44,6 +44,10 @@ function DistributionReportsPage() {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [selectedPrintDriver, setSelectedPrintDriver] = useState("");
 
+  // --- STATE PAGINATION ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const uniqueDrivers = useMemo(() => {
     return Array.from(new Set(reports.map(r => r.reporter_name).filter(Boolean)));
   }, [reports]);
@@ -55,12 +59,21 @@ function DistributionReportsPage() {
         `/distribution_reports_get.php?start_date=${dates.start}&end_date=${dates.end}`,
       );
       setReports(response.data);
+      setCurrentPage(1); // Reset ke halaman pertama saat data diperbarui
     } catch (error) {
       showNotification("Gagal memuat data laporan distribusi.", "error");
     } finally {
       setLoading(false);
     }
   }, [dates, showNotification]);
+
+  // Hitung data untuk halaman saat ini
+  const paginatedReports = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return reports.slice(startIndex, startIndex + itemsPerPage);
+  }, [reports, currentPage]);
+
+  const totalPages = Math.ceil(reports.length / itemsPerPage);
 
   const [kitchenInfo, setKitchenInfo] = useState(null);
 
@@ -333,8 +346,9 @@ function DistributionReportsPage() {
             Belum ada laporan distribusi pada periode ini.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-gray-500">
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-500">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                 <tr>
                   <th className="px-6 py-3">Tanggal</th>
@@ -348,7 +362,7 @@ function DistributionReportsPage() {
                 </tr>
               </thead>
               <tbody>
-                {reports.map((report) => (
+                {paginatedReports.map((report) => (
                   <tr
                     key={report.id}
                     className="bg-white border-b hover:bg-gray-50"
@@ -403,6 +417,72 @@ function DistributionReportsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3.5 sm:px-6 mt-4">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Sebelumnya
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs text-gray-700">
+                    Menampilkan <span className="font-bold">{(currentPage - 1) * itemsPerPage + 1}</span> hingga{" "}
+                    <span className="font-bold">{Math.min(currentPage * itemsPerPage, reports.length)}</span> dari{" "}
+                    <span className="font-bold">{reports.length}</span> data laporan
+                  </p>
+                </div>
+                <div>
+                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                    >
+                      <span className="sr-only">Sebelumnya</span>
+                      &laquo;
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        aria-current={currentPage === page ? "page" : undefined}
+                        className={`relative inline-flex items-center px-4 py-2 text-xs font-bold focus:z-20 ${
+                          currentPage === page
+                            ? "z-10 bg-intigizi-green text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-intigizi-green"
+                            : "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                    >
+                      <span className="sr-only">Selanjutnya</span>
+                      &raquo;
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
 
