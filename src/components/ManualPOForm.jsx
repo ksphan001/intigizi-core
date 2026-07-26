@@ -246,17 +246,18 @@ function ManualPOForm({ onSave, onCancel, loading }) {
                   </div>
                 </div>
 
-                {/* 5. Delete Action (Clean inline column) */}
+                {/* 5. Delete Action (Clean inline column, only shown if multiple items exist) */}
                 <div className="w-full md:w-1/12 flex justify-end md:justify-center">
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveItem(index)}
-                    disabled={items.length <= 1}
-                    className="h-[38px] w-full md:w-auto px-3 flex items-center justify-center rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all border border-transparent hover:border-red-100"
-                    title="Hapus Item"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(index)}
+                      className="h-[38px] w-full md:w-auto px-3 flex items-center justify-center rounded-xl text-gray-450 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-all border border-transparent hover:border-red-100"
+                      title="Hapus Item"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             );
