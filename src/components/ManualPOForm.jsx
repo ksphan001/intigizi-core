@@ -185,19 +185,9 @@ function ManualPOForm({ onSave, onCancel, loading }) {
             const availableSuppliers = item.ingredient_id ? (priceComparison[item.ingredient_id] || []) : [];
 
             return (
-              <div key={index} className="bg-white border border-gray-150 p-4 rounded-xl shadow-sm flex flex-col md:flex-row gap-4 items-end relative">
-                {/* Trash button */}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveItem(index)}
-                  disabled={items.length <= 1}
-                  className="absolute top-3 right-3 text-gray-400 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  <Trash2 size={15} />
-                </button>
-
+              <div key={index} className="bg-white border border-gray-150 p-4 rounded-xl shadow-sm flex flex-col md:flex-row gap-4 items-end">
                 {/* 1. Select Ingredient */}
-                <div className="w-full md:w-4/12">
+                <div className="w-full md:w-3/12">
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Pilih Bahan Baku</label>
                   <SearchableSelect
                     options={ingredientOptions}
@@ -229,7 +219,7 @@ function ManualPOForm({ onSave, onCancel, loading }) {
                 </div>
 
                 {/* 3. Quantity */}
-                <div className="w-1/2 md:w-2/12 relative">
+                <div className="w-[45%] md:w-2/12 relative">
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Jumlah</label>
                   <input
                     type="number"
@@ -249,11 +239,24 @@ function ManualPOForm({ onSave, onCancel, loading }) {
                 </div>
 
                 {/* 4. Subtotal Preview */}
-                <div className="w-1/2 md:w-2/12 text-right">
+                <div className="w-[40%] md:w-2/12 text-right">
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Subtotal</label>
                   <div className="h-[38px] flex items-center justify-end font-bold text-gray-800 text-xs">
                     {formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.price_per_unit) || 0))}
                   </div>
+                </div>
+
+                {/* 5. Delete Action (Clean inline column) */}
+                <div className="w-full md:w-1/12 flex justify-end md:justify-center">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveItem(index)}
+                    disabled={items.length <= 1}
+                    className="h-[38px] w-full md:w-auto px-3 flex items-center justify-center rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all border border-transparent hover:border-red-100"
+                    title="Hapus Item"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             );
