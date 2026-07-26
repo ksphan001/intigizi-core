@@ -289,6 +289,7 @@ function PurchaseOrderDetailPage() {
   if (!po) return null;
 
   const isActionable = isVendor && po.vendor_status === "Menunggu Konfirmasi";
+  const isB2B = po.supplier_id && po.supplier_name && po.supplier_name !== "Belum Ditentukan";
 
   return (
     <div className="space-y-6">
@@ -613,7 +614,7 @@ function PurchaseOrderDetailPage() {
                 <th className="px-4 py-2 text-left">Bahan</th>
                 <th className="px-4 py-2 text-right">Kuantitas</th>
                 <th className="px-4 py-2 text-right">Harga Satuan (Dapur)</th>
-                <th className="px-4 py-2 text-right">Harga Satuan (Vendor)</th>
+                {isB2B && <th className="px-4 py-2 text-right">Harga Satuan (Vendor)</th>}
                 <th className="px-4 py-2 text-right">Subtotal</th>
               </tr>
             </thead>
@@ -633,24 +634,26 @@ function PurchaseOrderDetailPage() {
                   <td className="px-4 py-3 text-right text-gray-500">
                     {formatCurrency(item.price_per_unit)}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    {isVendor && po.vendor_status === "Menunggu Konfirmasi" ? (
-                      <input
-                        type="number"
-                        value={item.vendor_price}
-                        onChange={(e) =>
-                          handlePriceChange(item.id, e.target.value)
-                        }
-                        className="input-style max-w-[120px] text-right ml-auto"
-                      />
-                    ) : (
-                      <span className="font-semibold text-intigizi-orange">
-                        {item.vendor_price_per_unit
-                          ? formatCurrency(item.vendor_price_per_unit)
-                          : "-"}
-                      </span>
-                    )}
-                  </td>
+                  {isB2B && (
+                    <td className="px-4 py-3 text-right">
+                      {isVendor && po.vendor_status === "Menunggu Konfirmasi" ? (
+                        <input
+                          type="number"
+                          value={item.vendor_price}
+                          onChange={(e) =>
+                            handlePriceChange(item.id, e.target.value)
+                          }
+                          className="input-style max-w-[120px] text-right ml-auto"
+                        />
+                      ) : (
+                        <span className="font-semibold text-intigizi-orange">
+                          {item.vendor_price_per_unit
+                            ? formatCurrency(item.vendor_price_per_unit)
+                            : "-"}
+                        </span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-right font-semibold">
                     {isVendor && po.vendor_status === "Menunggu Konfirmasi"
                       ? formatCurrency(
@@ -664,7 +667,7 @@ function PurchaseOrderDetailPage() {
             </tbody>
             <tfoot className="bg-gray-50 font-bold">
               <tr>
-                <td colSpan="4" className="px-4 py-3 text-right">
+                <td colSpan={isB2B ? "4" : "3"} className="px-4 py-3 text-right">
                   TOTAL
                 </td>
                 <td className="px-4 py-3 text-right">
