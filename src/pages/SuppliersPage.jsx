@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '@/services/api';
 import PageHeader from '@/components/PageHeader.jsx';
 import Modal from '@/components/Modal.jsx';
@@ -12,6 +13,7 @@ import SearchableSelect from '@/components/SearchableSelect.jsx';
 const ITEMS_PER_PAGE = 10;
 
 function SuppliersPage() {
+  const navigate = useNavigate();
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -265,7 +267,7 @@ function SuppliersPage() {
               <span>Tambah Manual</span>
             </button>
             <button
-              onClick={openMarketplaceModal}
+              onClick={() => navigate('/app/marketplace-suppliers')}
               className="flex items-center justify-center gap-1.5 px-4 py-2 bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 rounded-xl text-sm font-bold transition-all whitespace-nowrap shadow-sm"
             >
               <Plus size={18} />
@@ -308,6 +310,16 @@ function SuppliersPage() {
                         )}
                       </div>
                       <div className="text-xs text-gray-400 font-normal">{item.address}</div>
+                      {item.marketplace_id && item.review_count > 0 && (
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 border border-amber-200 text-amber-700">
+                            ⭐️ {parseFloat(item.average_rating || 0).toFixed(2)} ({item.review_count} Ulasan)
+                          </span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 border border-emerald-150 text-emerald-700">
+                            SLA: {parseFloat(item.sla_score || 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      )}
                     </th>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1.5 text-xs text-gray-700">

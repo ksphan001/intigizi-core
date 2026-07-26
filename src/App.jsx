@@ -40,6 +40,7 @@ import MenusPage from './pages/MenusPage.jsx';
 import RecipeManagementPage from './pages/RecipeManagementPage.jsx';
 import IngredientsPage from './pages/IngredientsPage.jsx';
 import SuppliersPage from './pages/SuppliersPage.jsx';
+import MarketplaceSuppliersPage from './pages/MarketplaceSuppliersPage.jsx';
 import DistributionPointsPage from './pages/DistributionPointsPage.jsx';
 import BeneficiariesPage from './pages/BeneficiariesPage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
@@ -160,6 +161,7 @@ function App() {
           <Route path="menus/:menuId" element={<RecipeManagementPage />} />
           <Route path="ingredients" element={<IngredientsPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="marketplace-suppliers" element={<MarketplaceSuppliersPage />} />
           <Route path="distribution-points" element={<DistributionPointsPage />} />
           <Route path="beneficiaries" element={<BeneficiariesPage />} />
           <Route path="users" element={<UsersPage />} />
