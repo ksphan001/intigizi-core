@@ -227,7 +227,7 @@ function ProcurementPage() {
       fetchProcurementDetails(); // Refresh data
     } catch (err) {
       showNotification(
-        err.response?.data?.message || "Gagal membuat PO.",
+        err.response?.data?.error || err.response?.data?.message || "Gagal membuat PO.",
         "error",
       );
     } finally {
