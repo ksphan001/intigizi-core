@@ -177,6 +177,8 @@ function ProcurementPage() {
   };
 
   const handleSubmitPO = async () => {
+    if (actionLoading) return;
+
     const itemsWithQuantity = poItems.filter(
       (item) => parseFloat(item.quantity) > 0,
     );
