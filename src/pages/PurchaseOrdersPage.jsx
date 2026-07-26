@@ -77,6 +77,27 @@ function PurchaseOrdersPage() {
     return <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status] || ''}`}>{status}</span>;
   };
 
+  const getDeliveryStatusBadge = (deliveryStatus) => {
+    if (!deliveryStatus) return null;
+    const styles = {
+      'pending': 'bg-amber-50 text-amber-800 border-amber-200',
+      'processing': 'bg-blue-50 text-blue-800 border-blue-200',
+      'shipped': 'bg-purple-50 text-purple-800 border-purple-200',
+      'delivered': 'bg-green-50 text-green-800 border-green-200',
+    };
+    const labels = {
+      'pending': 'Menunggu Pemasok',
+      'processing': 'Diproses Pemasok',
+      'shipped': 'Dalam Pengiriman',
+      'delivered': 'Tiba di Tujuan',
+    };
+    return (
+      <span className={`px-2 py-0.5 text-[10px] font-bold rounded border ${styles[deliveryStatus] || 'bg-gray-50 text-gray-850 border-gray-200'}`}>
+        {labels[deliveryStatus] || deliveryStatus}
+      </span>
+    );
+  };
+
   if (error) return <div className="text-red-500 p-4">{error}</div>;
 
   return (
@@ -117,7 +138,12 @@ function PurchaseOrdersPage() {
                     <th scope="row" className="px-6 py-4 font-medium text-gray-900">{item.po_code}</th>
                     <td className="px-6 py-4">{item.supplier_name || <span className="italic text-gray-400">Belum Ditentukan</span>}</td>
                     <td className="px-6 py-4">{formatCurrency(item.total_amount)}</td>
-                    <td className="px-6 py-4">{getStatusBadge(item.status)}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1 items-start">
+                        {getStatusBadge(item.status)}
+                        {item.supplier_name && item.supplier_name !== "Belum Ditentukan" && getDeliveryStatusBadge(item.delivery_status)}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">{item.proposal_code || <span className="italic text-gray-400">Manual</span>}</td>
                     <td className="px-6 py-4 flex justify-end">
                       {/* --- PERBAIKAN DI SINI --- */}

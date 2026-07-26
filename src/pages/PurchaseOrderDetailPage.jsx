@@ -257,6 +257,27 @@ function PurchaseOrderDetailPage() {
     );
   };
 
+  const getDeliveryStatusBadge = (deliveryStatus) => {
+    if (!deliveryStatus) return null;
+    const styles = {
+      'pending': 'bg-amber-50 text-amber-800 border-amber-250',
+      'processing': 'bg-blue-50 text-blue-800 border-blue-250',
+      'shipped': 'bg-purple-50 text-purple-800 border-purple-250',
+      'delivered': 'bg-green-50 text-green-800 border-green-250',
+    };
+    const labels = {
+      'pending': 'Menunggu Pemasok',
+      'processing': 'Diproses Pemasok',
+      'shipped': 'Dalam Pengiriman',
+      'delivered': 'Tiba di Tujuan',
+    };
+    return (
+      <span className={`px-2.5 py-1 text-xs font-bold rounded-full border ${styles[deliveryStatus] || 'bg-gray-50 text-gray-850 border-gray-200'}`}>
+        Status Pengiriman: {labels[deliveryStatus] || deliveryStatus}
+      </span>
+    );
+  };
+
   if (loading)
     return (
       <div className="flex justify-center items-center h-screen">
@@ -286,7 +307,10 @@ function PurchaseOrderDetailPage() {
               Tanggal Dibuat: {formatDate(po.created_at)}
             </p>
           </div>
-          {getStatusBadge(po.status)}
+          <div className="flex flex-wrap gap-2 items-center">
+            {getStatusBadge(po.status)}
+            {po.supplier_name && po.supplier_name !== "Belum Ditentukan" && getDeliveryStatusBadge(po.delivery_status)}
+          </div>
         </div>
         <div className="border-t my-4"></div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
