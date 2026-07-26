@@ -28,7 +28,7 @@ function MarketplaceSuppliersPage() {
       setSuppliers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Gagal mengambil data dari Marketplace B2B", err);
-      showNotification("Gagal mengambil daftar supplier dari Marketplace B2B.", "error");
+      showNotification("Gagal mengambil daftar supplier dari Sentra IntiGizi.", "error");
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ function MarketplaceSuppliersPage() {
       // Go back to the suppliers page
       navigate('/app/suppliers');
     } catch (err) {
-      showNotification(err.response?.data?.message || "Gagal menghubungkan supplier dari Marketplace B2B.", "error");
+      showNotification(err.response?.data?.message || "Gagal menghubungkan supplier dari Sentra IntiGizi.", "error");
     } finally {
       setConnectingId(null);
     }
@@ -89,8 +89,8 @@ function MarketplaceSuppliersPage() {
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 className="text-2xl font-black text-gray-805">Supplier B2B Marketplace</h1>
-          <p className="text-xs text-gray-400 font-semibold mt-0.5">Cari, tinjau rating ulasan, dan hubungkan supplier profesional ke dapur Anda</p>
+          <h1 className="text-2xl font-black text-gray-805">Supplier Sentra IntiGizi</h1>
+          <p className="text-xs text-gray-400 font-semibold mt-0.5">Cari, tinjau rating ulasan, dan hubungkan supplier dari Sentra IntiGizi ke dapur Anda</p>
         </div>
       </div>
 
@@ -113,7 +113,7 @@ function MarketplaceSuppliersPage() {
           </div>
         ) : suppliers.length === 0 ? (
           <div className="text-center py-20 text-gray-400 italic font-semibold">
-            Tidak ada supplier B2B yang tersedia saat ini di Marketplace.
+            Tidak ada supplier yang tersedia saat ini di Sentra IntiGizi.
           </div>
         ) : (
           <div className="space-y-4">
@@ -126,7 +126,7 @@ function MarketplaceSuppliersPage() {
                       <h3 className="text-lg font-extrabold text-gray-800">{sup.supplier_name}</h3>
                       {!!sup.is_verified && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
-                          Verified B2B
+                          Verified Sentra
                         </span>
                       )}
                     </div>
@@ -213,13 +213,13 @@ function MarketplaceSuppliersPage() {
                         {/* Column 1: Catalog Details */}
                         <div className="space-y-3">
                           <div>
-                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Katalog Produk B2B</h4>
+                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Katalog Produk Supplier</h4>
                             <p className="text-[9px] text-gray-400 font-semibold mt-0.5">Daftar bahan makanan yang dipasok oleh supplier ini</p>
                           </div>
                           
                           <div className="bg-white border border-gray-150 rounded-xl overflow-hidden shadow-inner max-h-[300px] overflow-y-auto divide-y divide-gray-100">
                             {supplierDetails[sup.id]?.catalog?.length === 0 ? (
-                              <p className="p-4 text-center text-xs text-gray-450 italic font-semibold">Belum ada katalog produk di marketplace.</p>
+                              <p className="p-4 text-center text-xs text-gray-450 italic font-semibold">Belum ada katalog produk di Sentra IntiGizi.</p>
                             ) : (
                               supplierDetails[sup.id]?.catalog?.map((item) => (
                                 <div key={item.id} className="p-3.5 flex justify-between items-center text-xs">

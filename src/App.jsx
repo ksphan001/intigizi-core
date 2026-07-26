@@ -161,7 +161,7 @@ function App() {
           <Route path="menus/:menuId" element={<RecipeManagementPage />} />
           <Route path="ingredients" element={<IngredientsPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
-          <Route path="marketplace-suppliers" element={<MarketplaceSuppliersPage />} />
+          <Route path="sentra-intigizi" element={<MarketplaceSuppliersPage />} />
           <Route path="distribution-points" element={<DistributionPointsPage />} />
           <Route path="beneficiaries" element={<BeneficiariesPage />} />
           <Route path="users" element={<UsersPage />} />

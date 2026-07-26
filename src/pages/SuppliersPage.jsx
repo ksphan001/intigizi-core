@@ -267,11 +267,11 @@ function SuppliersPage() {
               <span>Tambah Manual</span>
             </button>
             <button
-              onClick={() => navigate('/app/marketplace-suppliers')}
+              onClick={() => navigate('/app/sentra-intigizi')}
               className="flex items-center justify-center gap-1.5 px-4 py-2 bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 rounded-xl text-sm font-bold transition-all whitespace-nowrap shadow-sm"
             >
               <Plus size={18} />
-              <span>Hubungkan Marketplace</span>
+              <span>Hubungkan Sentra IntiGizi</span>
             </button>
           </div>
         </div>
@@ -296,7 +296,7 @@ function SuppliersPage() {
                         <span className="font-bold">{item.supplier_name}</span>
                         {item.marketplace_id ? (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                            B2B Marketplace
+                            Sentra IntiGizi
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gray-100 text-gray-600 border border-gray-200">
