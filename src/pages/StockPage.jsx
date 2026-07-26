@@ -38,6 +38,7 @@ function StockPage() {
 
   // States for damaged stock report modal
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [reportData, setReportData] = useState({
     quantity: "",
@@ -75,10 +76,13 @@ function StockPage() {
     }
   }, []);
 
-  const handleAutoReorder = async () => {
+  const triggerAutoReorder = () => {
     if (!predictiveData || !predictiveData.deficits || predictiveData.deficits.length === 0) return;
-    if (!window.confirm("Apakah Anda yakin ingin memesan secara otomatis seluruh bahan baku yang kurang ke supplier termurah?")) return;
-    
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleAutoReorder = async () => {
+    setIsConfirmModalOpen(false);
     setActionLoading(true);
     try {
       const response = await apiClient.post("/procurement_create_po_for_deficits.php", {
@@ -276,7 +280,7 @@ function StockPage() {
             </div>
           </div>
           <button
-            onClick={handleAutoReorder}
+            onClick={triggerAutoReorder}
             disabled={actionLoading}
             className="w-full md:w-auto py-2.5 px-4 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
           >
@@ -549,6 +553,39 @@ function StockPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal Konfirmasi Pemesanan Otomatis yang Cantik */}
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        title="Konfirmasi Pemesanan Otomatis"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-800">
+            <AlertTriangle size={24} className="text-amber-600 shrink-0" />
+            <p className="text-xs leading-relaxed font-semibold">
+              Apakah Anda yakin ingin memesan secara otomatis seluruh bahan baku yang kurang ke supplier termurah?
+            </p>
+          </div>
+          <p className="text-[11px] text-gray-550 leading-relaxed pl-1">
+            Sistem akan secara otomatis menyortir bahan baku yang kurang, mencari supplier termurah yang terdaftar di database, dan membuat draf Purchase Order secara terpisah (Split PO).
+          </p>
+          <div className="pt-4 border-t flex justify-end space-x-2">
+            <button
+              onClick={() => setIsConfirmModalOpen(false)}
+              className="px-4 py-2 bg-gray-150 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleAutoReorder}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm"
+            >
+              Ya, Pesan Otomatis
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
