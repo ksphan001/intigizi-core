@@ -289,7 +289,7 @@ function PurchaseOrderDetailPage() {
   if (!po) return null;
 
   const isActionable = isVendor && po.vendor_status === "Menunggu Konfirmasi";
-  const isB2B = po.supplier_id && po.supplier_name && po.supplier_name !== "Belum Ditentukan";
+  const isB2B = isVendor || (po.supplier_id && po.marketplace_id && po.supplier_name !== "Belum Ditentukan");
 
   return (
     <div className="space-y-6">
@@ -649,7 +649,7 @@ function PurchaseOrderDetailPage() {
                         <span className="font-semibold text-intigizi-orange">
                           {item.vendor_price_per_unit
                             ? formatCurrency(item.vendor_price_per_unit)
-                            : "-"}
+                            : formatCurrency(item.price_per_unit)}
                         </span>
                       )}
                     </td>
