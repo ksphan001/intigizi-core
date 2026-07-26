@@ -191,8 +191,7 @@ function ProcurementPage() {
     // Kelompokkan item berdasarkan supplier_id
     const groups = {};
     itemsWithQuantity.forEach(item => {
-      const suppId = item.selected_supplier_id;
-      if (!suppId) return; // Lewati Belanja Mandiri
+      const suppId = item.selected_supplier_id || ""; // Kosong berarti Belanja Mandiri
       if (!groups[suppId]) {
         groups[suppId] = [];
       }
@@ -205,9 +204,7 @@ function ProcurementPage() {
 
     const totalGroups = Object.keys(groups).length;
     if (totalGroups === 0) {
-      showNotification("Semua item diatur ke Belanja Mandiri. Tidak ada PO B2B yang dibuat.", "info");
-      setIsModalOpen(false);
-      setIsConfirmOpen(false);
+      showNotification("Tidak ada item yang akan dipesan.", "warning");
       return;
     }
 
@@ -218,13 +215,13 @@ function ProcurementPage() {
         Object.keys(groups).map(suppId => 
           apiClient.post("/procurement_create_po.php", {
             proposal_id: proposalId,
-            supplier_id: parseInt(suppId),
+            supplier_id: suppId ? parseInt(suppId) : "",
             items: groups[suppId]
           })
         )
       );
       
-      showNotification(`${totalGroups} Purchase Order berhasil dibuat dan dikirim ke supplier.`, "success");
+      showNotification(`${totalGroups} Purchase Order (termasuk Belanja Mandiri) berhasil diproses.`, "success");
       setIsModalOpen(false);
       setIsConfirmOpen(false);
       fetchProcurementDetails(); // Refresh data
