@@ -538,32 +538,32 @@ function SuppliersPage() {
           <div className="relative">
             <input
               type="text"
-              placeholder="Cari nama supplier di marketplace..."
+              placeholder="Cari nama supplier atau nama bahan baku (misal: Melon, Sayur, Daging)..."
               value={marketplaceSearch}
               onChange={(e) => {
                 setMarketplaceSearch(e.target.value);
                 fetchMarketplaceSuppliers(e.target.value);
               }}
-              className="input-style w-full pl-10"
+              className="input-style w-full pl-10 text-xs py-2"
             />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           </div>
 
-          <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 border border-gray-150 rounded-2xl no-scrollbar">
+          <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-150 border border-gray-150 rounded-2xl no-scrollbar bg-white">
             {marketplaceLoading ? (
-              <div className="p-8 text-center flex justify-center items-center gap-2 text-gray-500">
-                <Loader2 className="animate-spin text-green-600" size={20} />
+              <div className="p-8 text-center flex justify-center items-center gap-2 text-gray-500 text-xs">
+                <Loader2 className="animate-spin text-green-600" size={16} />
                 <span>Mencari di marketplace...</span>
               </div>
             ) : marketplaceSuppliers.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 italic">
+              <div className="p-8 text-center text-gray-400 italic text-xs">
                 Tidak ada supplier ditemukan di Marketplace.
               </div>
             ) : (
               marketplaceSuppliers.map((item) => (
-                <div key={item.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                <div key={item.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-gray-50 transition-colors">
                   <div className="min-w-0 flex-1">
-                    <h4 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                    <h4 className="text-sm font-bold text-gray-800 flex items-center gap-1.5 flex-wrap">
                       <span>{item.supplier_name}</span>
                       {!!item.is_verified && (
                         <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-green-50 text-green-700 border border-green-200">
@@ -573,16 +573,27 @@ function SuppliersPage() {
                     </h4>
                     <p className="text-xs text-gray-500 mt-0.5">PIC: <span className="font-semibold text-gray-700">{item.contact_person}</span> | Telp: <span className="font-semibold text-gray-700">{item.phone_number}</span></p>
                     <p className="text-xs text-gray-400 truncate mt-1">Alamat: {item.address || '-'}</p>
+                    
+                    {/* List of matching/available ingredients from their catalog */}
+                    {item.matching_ingredients && item.matching_ingredients.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-dashed border-gray-100">
+                        {item.matching_ingredients.map((ing, idx) => (
+                          <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded bg-gray-50 text-gray-650 text-[10px] font-bold border border-gray-150">
+                            {ing.ingredient_name} (Rp {ing.base_price.toLocaleString('id-ID')}/{ing.unit_symbol})
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => handleConnectSupplier(item.id)}
                     disabled={connectingId === item.id}
-                    className="px-3.5 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shrink-0"
+                    className="px-3.5 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 shrink-0 h-[32px] cursor-pointer"
                   >
                     {connectingId === item.id ? (
                       <Loader2 className="animate-spin" size={12} />
                     ) : (
-                      'Hubungkan'
+                      'Hubungkan Pemasok'
                     )}
                   </button>
                 </div>
