@@ -16,6 +16,7 @@ import {
   Check,
   File,
   Star,
+  Printer,
 } from "lucide-react";
 import Modal from "../components/Modal.jsx";
 import ConfirmationModal from "../components/ConfirmationModal.jsx";
@@ -291,9 +292,31 @@ function PurchaseOrderDetailPage() {
 
   return (
     <div className="space-y-6">
+      <style>{`
+        @media print {
+          .print\\:hidden {
+            display: none !important;
+          }
+          body {
+            background-color: white !important;
+            color: black !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .shadow-md, .shadow-xl {
+            box-shadow: none !important;
+            border: 1px solid #e5e7eb !important;
+          }
+          /* Matikan margin atas/bawah browser default */
+          @page {
+            margin: 1.5cm;
+          }
+        }
+      `}</style>
+
       <Link
         to={isVendor ? "/app/vendor/orders" : "/app/purchase-orders"}
-        className="flex items-center text-gray-500 hover:text-gray-800"
+        className="flex items-center text-gray-500 hover:text-gray-800 print:hidden"
       >
         <ArrowLeft size={20} className="mr-2" />
         Kembali ke Daftar Pesanan
@@ -310,6 +333,13 @@ function PurchaseOrderDetailPage() {
           <div className="flex flex-wrap gap-2 items-center">
             {getStatusBadge(po.status)}
             {po.supplier_name && po.supplier_name !== "Belum Ditentukan" && getDeliveryStatusBadge(po.delivery_status)}
+            <button
+              onClick={() => window.print()}
+              className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5 print:hidden cursor-pointer"
+            >
+              <Printer size={14} />
+              Cetak Bukti PO
+            </button>
           </div>
         </div>
         <div className="border-t my-4"></div>
@@ -331,7 +361,7 @@ function PurchaseOrderDetailPage() {
 
       {/* --- ZONA DOKUMEN BARU (HANYA UNTUK DAPUR) --- */}
       {!isVendor && (po.payment_proof_path || po.invoice_path) && (
-        <div className="bg-white p-6 rounded-xl shadow-md">
+        <div className="bg-white p-6 rounded-xl shadow-md print:hidden">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
             Dokumen Terkait
           </h2>
@@ -369,7 +399,7 @@ function PurchaseOrderDetailPage() {
       )}
 
       {/* --- ZONA AKSI --- */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
+      <div className="bg-white p-6 rounded-xl shadow-md print:hidden">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">
           Aksi yang Tersedia
         </h2>
