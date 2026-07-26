@@ -27,7 +27,7 @@ function MarketplaceSuppliersPage() {
       const data = await res.json();
       setSuppliers(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Gagal mengambil data dari Marketplace B2B", err);
+      console.error("Gagal mengambil data dari Sentra IntiGizi", err);
       showNotification("Gagal mengambil daftar supplier dari Sentra IntiGizi.", "error");
     } finally {
       setLoading(false);

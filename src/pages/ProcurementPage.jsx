@@ -590,9 +590,9 @@ function ProcurementPage() {
           </div>
 
           <div className="bg-amber-50 border border-amber-250 p-3 rounded-xl space-y-1.5">
-            <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">⚠️ INFO SUPPLIER MARKETPLACE & LOKAL</span>
+            <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">⚠️ INFO SUPPLIER SENTRA INTIGIZI & LOKAL</span>
             <p className="text-[11px] text-amber-850 leading-relaxed">
-              Katalog supplier dari <b>B2B Marketplace</b> dikelola sepihak oleh supplier masing-masing. Jika Anda ingin belanja bahan baku ini dari supplier B2B atau mendaftarkan supplier lokal baru:
+              Katalog supplier dari <b>Sentra IntiGizi</b> dikelola sepihak oleh supplier masing-masing. Jika Anda ingin belanja bahan baku ini dari supplier Sentra IntiGizi atau mendaftarkan supplier lokal baru:
             </p>
             <div className="flex flex-col gap-1 text-[11px] pt-1">
               <Link
