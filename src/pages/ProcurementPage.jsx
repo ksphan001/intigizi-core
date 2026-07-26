@@ -37,6 +37,13 @@ function ProcurementPage() {
   const [poItems, setPoItems] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // States for on-the-fly supplier connection
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [activeConnectItem, setActiveConnectItem] = useState(null);
+  const [connectSupplierId, setConnectSupplierId] = useState("");
+  const [connectPrice, setConnectPrice] = useState("");
+  const [connectLoading, setConnectLoading] = useState(false);
+
   const fetchProcurementDetails = useCallback(async () => {
     try {
       setLoading(true);
@@ -112,6 +119,47 @@ function ProcurementPage() {
 
   const handleRemoveItem = (index) => {
     setPoItems(poItems.filter((_, i) => i !== index));
+  };
+
+  const handleOpenConnectModal = (item, index) => {
+    setActiveConnectItem({ item, index });
+    setConnectSupplierId("");
+    setConnectPrice(item.price || "");
+    setIsConnectModalOpen(true);
+  };
+
+  const handleSaveConnectSupplier = async () => {
+    if (!connectSupplierId || !connectPrice || parseFloat(connectPrice) <= 0) {
+      showNotification("Pilih supplier dan isi harga yang valid.", "warning");
+      return;
+    }
+    setConnectLoading(true);
+    try {
+      await apiClient.post("/supplier_ingredients_manage.php", {
+        action: "add_single",
+        supplier_id: parseInt(connectSupplierId),
+        ingredient_id: activeConnectItem.item.ingredient_id,
+        base_price: parseFloat(connectPrice)
+      });
+      showNotification("Berhasil menghubungkan bahan baku ke supplier.", "success");
+      
+      // Refresh price comparisons
+      const compRes = await apiClient.get('/procurement_compare_prices.php');
+      const updatedComparisons = compRes.data || {};
+      setPriceComparisons(updatedComparisons);
+      
+      // Auto-select the newly added supplier in the item row
+      const newItems = [...poItems];
+      newItems[activeConnectItem.index].selected_supplier_id = connectSupplierId;
+      newItems[activeConnectItem.index].price = parseFloat(connectPrice);
+      setPoItems(newItems);
+      
+      setIsConnectModalOpen(false);
+    } catch (err) {
+      showNotification(err.response?.data?.message || "Gagal menghubungkan supplier.", "error");
+    } finally {
+      setConnectLoading(false);
+    }
   };
 
   const handleAutoSelectCheapest = () => {
@@ -386,27 +434,36 @@ function ProcurementPage() {
                         {item.name}
                       </td>
                       <td className="px-4 py-2">
-                        <select
-                          value={item.selected_supplier_id}
-                          onChange={(e) => {
-                            const selectedSuppId = e.target.value;
-                            const options = priceComparisons[item.ingredient_id] || [];
-                            const foundOption = options.find(o => o.supplier_id === parseInt(selectedSuppId));
-                            
-                            const newItems = [...poItems];
-                            newItems[index].selected_supplier_id = selectedSuppId;
-                            newItems[index].price = foundOption ? foundOption.price : 0;
-                            setPoItems(newItems);
-                          }}
-                          className="input-style text-xs py-1 px-2.5 w-full bg-white font-medium"
-                        >
-                          <option value="">-- Belanja Mandiri (Beli Manual) --</option>
-                          {(priceComparisons[item.ingredient_id] || []).map(opt => (
-                            <option key={opt.supplier_id} value={opt.supplier_id}>
-                              {opt.supplier_name} {opt.is_verified ? "✓" : ""} - Rp {opt.price.toLocaleString('id-ID')}{opt.distance_km !== null ? ` (${opt.distance_km} km)` : ''}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex flex-col gap-1">
+                          <select
+                            value={item.selected_supplier_id}
+                            onChange={(e) => {
+                              const selectedSuppId = e.target.value;
+                              const options = priceComparisons[item.ingredient_id] || [];
+                              const foundOption = options.find(o => o.supplier_id === parseInt(selectedSuppId));
+                              
+                              const newItems = [...poItems];
+                              newItems[index].selected_supplier_id = selectedSuppId;
+                              newItems[index].price = foundOption ? foundOption.price : 0;
+                              setPoItems(newItems);
+                            }}
+                            className="input-style text-xs py-1 px-2.5 w-full bg-white font-medium border-gray-300 focus:border-green-500"
+                          >
+                            <option value="">-- Belanja Mandiri (Beli Manual) --</option>
+                            {(priceComparisons[item.ingredient_id] || []).map(opt => (
+                              <option key={opt.supplier_id} value={opt.supplier_id}>
+                                {opt.supplier_name} {opt.is_verified ? "✓" : ""} - Rp {opt.price.toLocaleString('id-ID')}{opt.distance_km !== null ? ` (${opt.distance_km} km)` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenConnectModal(item, index)}
+                            className="text-[10px] text-left text-green-700 font-bold hover:underline cursor-pointer"
+                          >
+                            + Hubungkan Supplier
+                          </button>
+                        </div>
                       </td>
                       <td className="px-4 py-2">
                         <div className="relative">
@@ -499,6 +556,75 @@ function ProcurementPage() {
         confirmColor="btn-primary"
         icon={<Check size={16} className="mr-2" />}
       />
+
+      {/* Modal Kustom untuk Menghubungkan Supplier Baru Secara Instan */}
+      <Modal
+        isOpen={isConnectModalOpen}
+        onClose={() => setIsConnectModalOpen(false)}
+        title={`Hubungkan Supplier untuk ${activeConnectItem?.item?.name || 'Bahan Baku'}`}
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Daftarkan bahan baku ini ke katalog salah satu supplier lokal yang terhubung agar sistem dapat memproses transaksi PO secara sah dan akuntabel.
+          </p>
+
+          <div>
+            <label className="block text-[10px] font-bold text-gray-450 uppercase tracking-wider mb-1">
+              Pilih Supplier
+            </label>
+            <select
+              value={connectSupplierId}
+              onChange={(e) => setConnectSupplierId(e.target.value)}
+              className="input-style bg-white w-full text-xs font-semibold"
+              required
+            >
+              <option value="" disabled>-- Pilih Supplier --</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.type})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-gray-450 uppercase tracking-wider mb-1">
+              Harga Dasar Bahan Baku (Rp)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                placeholder="0.00"
+                value={connectPrice}
+                onChange={(e) => setConnectPrice(e.target.value)}
+                className="input-style pl-8 w-full text-xs font-semibold"
+                required
+              />
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 text-xs font-bold">
+                Rp
+              </span>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={() => setIsConnectModalOpen(false)}
+              className="px-4 py-2 bg-gray-150 hover:bg-gray-250 text-gray-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveConnectSupplier}
+              disabled={connectLoading}
+              className="px-4 py-2 bg-green-700 hover:bg-green-800 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+            >
+              {connectLoading ? "Menghubungkan..." : "Hubungkan Sekarang"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
