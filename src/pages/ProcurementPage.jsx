@@ -575,12 +575,15 @@ function ProcurementPage() {
               className="input-style bg-white w-full text-xs font-semibold"
               required
             >
-              <option value="" disabled>-- Pilih Supplier --</option>
-              {suppliers.map((s) => (
+              <option value="" disabled>-- Pilih Supplier Lokal --</option>
+              {suppliers.filter(s => s.type === 'Supplier').map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} ({s.type})
+                  {s.name}
                 </option>
               ))}
+              {suppliers.filter(s => s.type === 'Supplier').length === 0 && (
+                <option value="" disabled>Belum ada supplier lokal terdaftar. Daftarkan di menu Data Master &gt; Supplier.</option>
+              )}
             </select>
           </div>
 
