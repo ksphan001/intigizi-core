@@ -132,7 +132,11 @@ function ManualPOForm({ onSave, onCancel, loading }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    
+    if (!supplierId || supplierId === "") {
+      setError("Anda wajib memilih supplier untuk membuat PO yang akuntabel.");
+      return;
+    }
+
     const tax_ppn = applyPPN ? Math.round(totalAmount * 0.11) : 0;
     const tax_pph = applyPPh ? Math.round(totalAmount * 0.015) : 0;
     const net_amount = totalAmount + tax_ppn - tax_pph;
@@ -198,8 +202,9 @@ function ManualPOForm({ onSave, onCancel, loading }) {
           value={supplierId}
           onChange={(e) => setSupplierId(e.target.value)}
           className="input-style bg-white"
+          required
         >
-          <option value="">-- Belanja Manual (Beli Mandiri / Tanpa Supplier) --</option>
+          <option value="" disabled>-- Pilih Supplier Pemasok --</option>
           {allSuppliers.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name} ({s.type})
