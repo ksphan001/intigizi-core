@@ -47,7 +47,9 @@ function SuppliersPage() {
   const fetchMarketplaceSuppliers = async (searchVal = '') => {
     setMarketplaceLoading(true);
     try {
-      const url = `http://intigizi-supplier-api.test/app/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
+      const supplierApiBase = import.meta.env.VITE_SUPPLIER_API_URL || 'http://intigizi-supplier-api.test/app';
+      const url = `${supplierApiBase}/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
+
       const res = await fetch(url);
       const data = await res.json();
       setMarketplaceSuppliers(Array.isArray(data) ? data : []);

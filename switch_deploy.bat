@@ -1,10 +1,13 @@
 @echo off
-title Switch to Deploy Environment
+title Switch to Deploy - IntiGizi Dapur
 echo ==================================================
-echo   Beralih ke Lingkungan Deploy / Produksi
+echo   IntiGizi Dapur - Beralih ke Lingkungan Deploy
 echo ==================================================
 echo.
-set /p domain="Masukkan Domain API Kustom (Contoh: api.mydomain.com) atau tekan ENTER untuk default: "
+echo  Konfigurasi domain diambil dari: intigizi.deploy.json
+echo  Untuk mengganti domain, masukkan root domain di bawah.
+echo.
+set /p domain="Root Domain (Contoh: intigizi.ksphan.id) atau tekan ENTER untuk pakai konfigurasi saat ini: "
 
 echo.
 if "%domain%"=="" (

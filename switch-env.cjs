@@ -1,29 +1,44 @@
 /**
- * switch-env.cjs
+ * switch-env.cjs  —  IntiGizi Core (Dapur)
  * Tool untuk berpindah antara lingkungan LOKAL dan DEPLOY (PRODUKSI) secara otomatis.
- * 
- * Penggunaan:
- *   node switch-env.cjs local                   -> Beralih ke konfigurasi lokal
- *   node switch-env.cjs deploy                  -> Beralih ke konfigurasi produksi/deploy default & jalankan build
- *   node switch-env.cjs deploy [custom-domain]  -> Beralih ke konfigurasi produksi dengan domain API kustom & jalankan build
- * 
- * Contoh:
- *   node switch-env.cjs deploy api.custom.com
+ * Membaca konfigurasi domain dari: ../intigizi.deploy.json
  */
 
-const fs = require('fs');
+const fs   = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const target = process.argv[2];
-let customDomainInput = process.argv[3];
+const target          = process.argv[2];
+const customRootInput = process.argv[3];
 
 if (target !== 'local' && target !== 'deploy') {
-  console.log('\x1b[31m%s\x1b[0m', 'Error: Argumen tidak valid. Gunakan "local" atau "deploy".');
-  console.log('Contoh: node switch-env.cjs local');
+  console.log('\x1b[31m%s\x1b[0m', 'Error: Gunakan "local" atau "deploy".');
   process.exit(1);
 }
 
+// ── Baca konfigurasi terpusat ─────────────────────────────────────
+const deployConfigPath = path.join(__dirname, '../intigizi.deploy.json');
+let deployConfig = {};
+if (fs.existsSync(deployConfigPath)) {
+  deployConfig = JSON.parse(fs.readFileSync(deployConfigPath, 'utf8'));
+} else {
+  console.log('\x1b[33m%s\x1b[0m', '⚠ intigizi.deploy.json tidak ditemukan.');
+}
+
+if (target === 'deploy' && customRootInput) {
+  const clean = customRootInput.trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  deployConfig.root_domain = clean;
+  fs.writeFileSync(deployConfigPath, JSON.stringify(deployConfig, null, 2), 'utf8');
+}
+
+const rootDomain           = deployConfig.root_domain || 'intigizi.ksphan.id';
+const services             = deployConfig.services    || {};
+const deployApiUrl         = `https://${services.dapur_api?.subdomain    || 'api'}.${rootDomain}`;
+const deploySupplierApiUrl = `https://${services.supplier_api?.subdomain || 'api-supplier'}.${rootDomain}`;
+const localApiUrl          = services.dapur_api?.local_url    || 'http://intigizi-api.test';
+const localSupplierApiUrl  = services.supplier_api?.local_url || 'http://intigizi-supplier-api.test';
+
+// ── Path file ────────────────────────────────────────────────────
 const apiEnvPath          = path.join(__dirname, '../intigizi-api/.env');
 const supplierApiEnvPath  = path.join(__dirname, '../intigizi-supplier-api/.env');
 const coreDevEnvPath      = path.join(__dirname, '.env.development');
@@ -31,224 +46,91 @@ const coreProdEnvPath     = path.join(__dirname, '.env.production');
 const supplierDevEnvPath  = path.join(__dirname, '../intigizi-supplier-core/.env.development');
 const supplierProdEnvPath = path.join(__dirname, '../intigizi-supplier-core/.env.production');
 
-// Konfigurasi Default Deploy
-let deployApiUrl          = 'https://api.intigizi.ksphan.id';
-let deployOriginDomain    = 'intigizi.ksphan.id';
-let deploySupplierApiUrl  = 'https://api-supplier.intigizi.ksphan.id';
-let deploySupplierOrigin  = 'supplier.intigizi.ksphan.id';
+console.log('\x1b[36m%s\x1b[0m', `\nMode: ${target.toUpperCase()} | Domain: ${rootDomain}`);
 
-// Jika ada kustom domain dari user, bersihkan dan pasang
-if (target === 'deploy' && customDomainInput) {
-  // Hapus http://, https://, trailing slash
-  let cleanDomain = customDomainInput.trim()
-    .replace(/^https?:\/\//i, '')
-    .replace(/\/+$/, '');
-  deployApiUrl = `https://${cleanDomain}`;
-  deployOriginDomain = cleanDomain;
-  console.log('\x1b[35m%s\x1b[0m', `Menggunakan domain API kustom untuk deploy: ${deployApiUrl}`);
-  // Derivasikan domain supplier dari domain utama jika tidak diberikan terpisah
-  deploySupplierApiUrl = `https://api-supplier.${cleanDomain.replace(/^api\./, '')}`;
-  deploySupplierOrigin = `supplier.${cleanDomain.replace(/^api\./, '')}`;
+// Fungsi untuk mengganti nilai env secara flat (selalu mencocokkan key=)
+function replaceEnvValue(content, key, value) {
+  const lines = content.split('\n');
+  let found = false;
+  const result = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith(key + '=')) {
+      found = true;
+      return `${key}=${value}`;
+    }
+    return line;
+  });
+  if (!found) {
+    result.push(`${key}=${value}`);
+  }
+  return result.join('\n');
 }
 
-console.log('\x1b[36m%s\x1b[0m', `Memulai proses perpindahan konfigurasi ke: ${target.toUpperCase()}...\n`);
+function updateEnvFile(filePath, label, updates) {
+  if (!fs.existsSync(filePath)) {
+    console.log('\x1b[33m%s\x1b[0m', `⚠ ${label} tidak ditemukan. Dilewati.`);
+    return;
+  }
+  let content = fs.readFileSync(filePath, 'utf8');
+  for (const { key, value } of updates) {
+    content = replaceEnvValue(content, key, value);
+  }
+  fs.writeFileSync(filePath, content, 'utf8');
+  console.log('\x1b[32m%s\x1b[0m', `✔ ${label} diperbarui.`);
+}
 
+const isLocal = target === 'local';
+
+// 1. Update intigizi-api/.env
+updateEnvFile(apiEnvPath, 'intigizi-api/.env', [
+  { key: 'APP_ENV',          value: isLocal ? '"development"' : '"production"' },
+  { key: 'APP_URL',          value: isLocal ? localApiUrl : deployApiUrl },
+  { key: 'SUPPLIER_API_URL', value: isLocal ? localSupplierApiUrl : deploySupplierApiUrl },
+  { key: 'ALLOWED_ORIGINS',  value: isLocal ? `"http://localhost:5173,http://intigizi-core.test, *"` : `"https://${rootDomain},https://www.${rootDomain}, *"` }
+]);
+
+// 2. Update intigizi-supplier-api/.env
+updateEnvFile(supplierApiEnvPath, 'intigizi-supplier-api/.env', [
+  { key: 'APP_ENV',         value: isLocal ? '"development"' : '"production"' },
+  { key: 'APP_URL',         value: isLocal ? localSupplierApiUrl : deploySupplierApiUrl },
+  { key: 'ALLOWED_ORIGINS', value: isLocal ? `"http://localhost:5174,http://intigizi-supplier-core.test,http://intigizi-supplier-api.test, *"` : `"${deploySupplierApiUrl},https://www.${services.supplier_frontend?.subdomain || 'supplier'}.${rootDomain}, *"` }
+]);
+
+// 3. Update intigizi-core env files
+const coreEnvFiles = [
+  { path: coreDevEnvPath,  label: 'intigizi-core .env.development' },
+  { path: coreProdEnvPath, label: 'intigizi-core .env.production'  }
+];
+for (const f of coreEnvFiles) {
+  updateEnvFile(f.path, f.label, [
+    { key: 'VITE_API_URL',          value: isLocal ? `${localApiUrl}/app` : `${deployApiUrl}/app` },
+    { key: 'VITE_SUPPLIER_API_URL', value: isLocal ? `${localSupplierApiUrl}/app` : `${deploySupplierApiUrl}/app` }
+  ]);
+}
+
+// 4. Update intigizi-supplier-core env files
+const supplierCoreEnvFiles = [
+  { path: supplierDevEnvPath,  label: 'intigizi-supplier-core .env.development' },
+  { path: supplierProdEnvPath, label: 'intigizi-supplier-core .env.production'  }
+];
+for (const f of supplierCoreEnvFiles) {
+  updateEnvFile(f.path, f.label, [
+    { key: 'VITE_API_URL', value: isLocal ? `${localSupplierApiUrl}/app` : `${deploySupplierApiUrl}/app` }
+  ]);
+}
+
+// 5. Build
+console.log('\n\x1b[33m%s\x1b[0m', `[Build 1/2] Dapur IntiGizi...`);
 try {
-  // 1. Modifikasi .env pada intigizi-api
-  if (fs.existsSync(apiEnvPath)) {
-    let apiEnvContent = fs.readFileSync(apiEnvPath, 'utf8');
+  execSync('npm run build', { stdio: 'inherit', shell: true });
+} catch { console.log('Build Dapur gagal.'); }
 
-    if (target === 'local') {
-      // Aktifkan lokal
-      apiEnvContent = apiEnvContent.replace(/#\s*(APP_ENV="development")/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(APP_URL=http:\/\/intigizi-api\.test)/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(DB_HOST="localhost")/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(DB_USER="root")/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(DB_PASS="")/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(DB_NAME="dbintigizi")/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(ALLOWED_ORIGINS="[^"]*local[^"]*")/g, '$1');
-
-      // Matikan deploy (cari baris deploy yang aktif saat ini dan matikan)
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(APP_ENV="production")/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(APP_URL=https:\/\/[^\s\n#]+)/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(DB_HOST="[^\s\n#]+")/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(DB_USER="[^\s\n#]+")/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(DB_PASS="[^\s\n#]*")/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(DB_NAME="[^\s\n#]+")/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(ALLOWED_ORIGINS="https:\/\/[^\s\n#]+)/gm, '# $1');
-    } else {
-      // Aktifkan deploy dengan domain target
-      
-      // Update nilai APP_URL dan ALLOWED_ORIGINS di bagian DEPLOY (aktif atau non-aktif)
-      // Cari dan ganti pattern APP_URL untuk produksi
-      const appUrlRegex = /#?\s*(APP_URL=)https:\/\/[^\s\n#]+/g;
-      if (appUrlRegex.test(apiEnvContent)) {
-        apiEnvContent = apiEnvContent.replace(appUrlRegex, `$1${deployApiUrl}`);
-      } else {
-        apiEnvContent = apiEnvContent.replace(/#?\s*(APP_URL=https:\/\/api\.intigizi\.ksphan\.id)/g, `APP_URL=${deployApiUrl}`);
-      }
-
-      // Cari dan ganti pattern ALLOWED_ORIGINS untuk produksi
-      const allowedRegex = /#?\s*(ALLOWED_ORIGINS="https:\/\/)[^\s\n#]+/g;
-      if (allowedRegex.test(apiEnvContent)) {
-        apiEnvContent = apiEnvContent.replace(allowedRegex, `$1${deployOriginDomain},https://www.${deployOriginDomain}, *"`);
-      } else {
-        apiEnvContent = apiEnvContent.replace(/#?\s*(ALLOWED_ORIGINS="https:\/\/intigizi\.ksphan\.id[^"]*")/g, `ALLOWED_ORIGINS="${deployApiUrl},https://www.${deployOriginDomain}, *"`);
-      }
-
-      // Aktifkan baris-baris deploy
-      apiEnvContent = apiEnvContent.replace(/#\s*(APP_ENV="production")/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(APP_URL=https:\/\/[^\s\n#]+)/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(DB_HOST="[^\s\n#]+")/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(DB_USER="[^\s\n#]+")/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(DB_PASS="[^\s\n#]*")/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(DB_NAME="[^\s\n#]+")/g, '$1');
-      apiEnvContent = apiEnvContent.replace(/#\s*(ALLOWED_ORIGINS="https:\/\/[^\s\n#]+)/g, '$1');
-
-      // Matikan lokal
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(APP_ENV="development")/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(APP_URL=http:\/\/intigizi-api\.test)/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(DB_HOST="localhost")/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(DB_USER="root")/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(DB_PASS="")/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(DB_NAME="dbintigizi")/gm, '# $1');
-      apiEnvContent = apiEnvContent.replace(/^(?!\s*#)\s*(ALLOWED_ORIGINS="http:\/\/localhost:5173[^"]*")/gm, '# $1');
-    }
-
-    fs.writeFileSync(apiEnvPath, apiEnvContent, 'utf8');
-    console.log('\x1b[32m%s\x1b[0m', '✔ Konfigurasi API .env berhasil diperbarui.');
-  } else {
-    console.log('\x1b[33m%s\x1b[0m', '⚠ File .env API tidak ditemukan. Melewati langkah ini.');
-  }
-
-  // 2. Modifikasi .env.development pada intigizi-core
-  if (fs.existsSync(coreDevEnvPath)) {
-    let devEnvContent = fs.readFileSync(coreDevEnvPath, 'utf8');
-    if (target === 'local') {
-      devEnvContent = devEnvContent.replace(/#\s*(VITE_API_URL=http:\/\/intigizi-api\.test\/app)/g, '$1');
-      devEnvContent = devEnvContent.replace(/^(VITE_API_URL=https:\/\/[^\s\n#]+)/gm, '# $1');
-    } else {
-      // Tulis URL deploy baru (baik custom atau default)
-      const deployTargetUrl = `${deployApiUrl}/app`;
-      // Ganti URL deploy yang ada
-      devEnvContent = devEnvContent.replace(/#?\s*(VITE_API_URL=https:\/\/[^\s\n#]+)/g, `VITE_API_URL=${deployTargetUrl}`);
-      // Nonaktifkan lokal
-      devEnvContent = devEnvContent.replace(/^(VITE_API_URL=http:\/\/intigizi-api\.test\/app)/gm, '# $1');
-    }
-    fs.writeFileSync(coreDevEnvPath, devEnvContent, 'utf8');
-    console.log('\x1b[32m%s\x1b[0m', '✔ Konfigurasi Frontend .env.development berhasil diperbarui.');
-  }
-
-  // 3. Modifikasi .env.production pada intigizi-core
-  if (fs.existsSync(coreProdEnvPath)) {
-    let prodEnvContent = fs.readFileSync(coreProdEnvPath, 'utf8');
-    if (target === 'local') {
-      prodEnvContent = prodEnvContent.replace(/#\s*(VITE_API_URL=http:\/\/intigizi-api\.test\/app)/g, '$1');
-      prodEnvContent = prodEnvContent.replace(/^(VITE_API_URL=https:\/\/[^\s\n#]+)/gm, '# $1');
-    } else {
-      // Tulis URL deploy baru (baik custom atau default)
-      const deployTargetUrl = `${deployApiUrl}/app`;
-      // Ganti URL deploy yang ada
-      prodEnvContent = prodEnvContent.replace(/#?\s*(VITE_API_URL=https:\/\/[^\s\n#]+)/g, `VITE_API_URL=${deployTargetUrl}`);
-      // Nonaktifkan lokal
-      prodEnvContent = prodEnvContent.replace(/^(VITE_API_URL=http:\/\/intigizi-api\.test\/app)/gm, '# $1');
-    }
-    fs.writeFileSync(coreProdEnvPath, prodEnvContent, 'utf8');
-    console.log('\x1b[32m%s\x1b[0m', '✔ Konfigurasi Frontend .env.production berhasil diperbarui.');
-  }
-
-  // 4. Modifikasi .env pada intigizi-supplier-api
-  if (fs.existsSync(supplierApiEnvPath)) {
-    let sApiContent = fs.readFileSync(supplierApiEnvPath, 'utf8');
-    if (target === 'local') {
-      sApiContent = sApiContent.replace(/#\s*(APP_ENV="development")/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(APP_URL=http:\/\/intigizi-supplier-api\.test)/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(DB_HOST="localhost")/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(DB_USER="root")/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(DB_PASS="")/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(DB_NAME="dbintigizi_marketplace")/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(ALLOWED_ORIGINS="[^"]*intigizi-supplier[^"]*")/g, '$1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(APP_ENV="production")/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(APP_URL=https:\/\/[^\s\n#]+)/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(DB_HOST="(?!localhost)[^\s\n#]+")/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(DB_USER="(?!root)[^\s\n#]+")/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(DB_PASS="[^"]+")/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(DB_NAME="(?!dbintigizi_marketplace)[^\s\n#]+")/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(ALLOWED_ORIGINS="https:\/\/[^\s\n#]+)/gm, '# $1');
-    } else {
-      // Update URL nilai
-      sApiContent = sApiContent.replace(/#?\s*(APP_URL=)https:\/\/[^\s\n#]+/g, `$1${deploySupplierApiUrl}`);
-      sApiContent = sApiContent.replace(/#?\s*(ALLOWED_ORIGINS=")https:\/\/[^\s\n#]+/g,
-        `$1${deploySupplierApiUrl},https://www.${deploySupplierOrigin}, *"`);
-      sApiContent = sApiContent.replace(/#\s*(APP_ENV="production")/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(APP_URL=https:\/\/[^\s\n#]+)/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(DB_HOST="[^\s\n#]+")/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(DB_USER="[^\s\n#]+")/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(DB_PASS="[^\s\n#]*")/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(DB_NAME="[^\s\n#]+")/g, '$1');
-      sApiContent = sApiContent.replace(/#\s*(ALLOWED_ORIGINS="https:\/\/[^\s\n#]+)/g, '$1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(APP_ENV="development")/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(APP_URL=http:\/\/intigizi-supplier-api\.test)/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(DB_HOST="localhost")/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(DB_USER="root")/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(DB_PASS="")/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(DB_NAME="dbintigizi_marketplace")/gm, '# $1');
-      sApiContent = sApiContent.replace(/^(?!\s*#)\s*(ALLOWED_ORIGINS="http:\/\/[^\s\n#]+)/gm, '# $1');
-    }
-    fs.writeFileSync(supplierApiEnvPath, sApiContent, 'utf8');
-    console.log('\x1b[32m%s\x1b[0m', '✔ Konfigurasi Supplier API .env berhasil diperbarui.');
-  } else {
-    console.log('\x1b[33m%s\x1b[0m', '⚠ File .env Supplier API tidak ditemukan. Melewati langkah ini.');
-  }
-
-  // 5. Modifikasi .env.development & .env.production pada intigizi-supplier-core
-  const supplierEnvFiles = [
-    { path: supplierDevEnvPath, label: 'Supplier Core .env.development' },
-    { path: supplierProdEnvPath, label: 'Supplier Core .env.production' },
-  ];
-  for (const envFile of supplierEnvFiles) {
-    if (!fs.existsSync(envFile.path)) {
-      console.log('\x1b[33m%s\x1b[0m', `⚠ File ${envFile.label} tidak ditemukan. Melewati.`);
-      continue;
-    }
-    let envContent = fs.readFileSync(envFile.path, 'utf8');
-    if (target === 'local') {
-      envContent = envContent.replace(/#\s*(VITE_API_URL=http:\/\/intigizi-supplier-api\.test\/app)/g, '$1');
-      envContent = envContent.replace(/^(VITE_API_URL=https:\/\/[^\s\n#]+)/gm, '# $1');
-    } else {
-      const deployTargetUrl = `${deploySupplierApiUrl}/app`;
-      envContent = envContent.replace(/#?\s*(VITE_API_URL=https:\/\/[^\s\n#]+)/g, `VITE_API_URL=${deployTargetUrl}`);
-      envContent = envContent.replace(/^(VITE_API_URL=http:\/\/intigizi-supplier-api\.test\/app)/gm, '# $1');
-    }
-    fs.writeFileSync(envFile.path, envContent, 'utf8');
-    console.log('\x1b[32m%s\x1b[0m', `✔ Konfigurasi ${envFile.label} berhasil diperbarui.`);
-  }
-
-  // 6. Jalankan build produksi otomatis — intigizi-core
-  console.log('\n\x1b[33m%s\x1b[0m', `Menjalankan build produksi Dapur IntiGizi (Vite build) untuk target: ${target.toUpperCase()}...`);
+const supplierCorePath = path.join(__dirname, '../intigizi-supplier-core');
+if (fs.existsSync(path.join(supplierCorePath, 'package.json'))) {
+  console.log('\n\x1b[33m%s\x1b[0m', `[Build 2/2] Sentra IntiGizi...`);
   try {
-    execSync('npm run build', { stdio: 'inherit', shell: true });
-    console.log('\n\x1b[32m%s\x1b[0m', '✔ Build Dapur IntiGizi selesai dengan sukses!');
-  } catch (buildError) {
-    console.log('\x1b[31m%s\x1b[0m', '✘ Gagal menjalankan npm run build untuk Dapur. Silakan jalankan secara manual.');
-  }
-
-  // 7. Jalankan build produksi otomatis — intigizi-supplier-core
-  const supplierCorePath = path.join(__dirname, '../intigizi-supplier-core');
-  if (fs.existsSync(path.join(supplierCorePath, 'package.json'))) {
-    console.log('\n\x1b[33m%s\x1b[0m', `Menjalankan build produksi Sentra IntiGizi (Vite build) untuk target: ${target.toUpperCase()}...`);
-    try {
-      execSync('npm run build', { cwd: supplierCorePath, stdio: 'inherit', shell: true });
-      console.log('\n\x1b[32m%s\x1b[0m', '✔ Build Sentra IntiGizi selesai dengan sukses!');
-    } catch (buildError) {
-      console.log('\x1b[31m%s\x1b[0m', '✘ Gagal menjalankan npm run build untuk Sentra IntiGizi. Silakan jalankan secara manual.');
-    }
-  } else {
-    console.log('\x1b[33m%s\x1b[0m', '⚠ Direktori intigizi-supplier-core tidak ditemukan. Melewati build supplier.');
-  }
-
-  console.log('\n\x1b[42m%s\x1b[0m', ' SEMUA PROSES SELESAI DENGAN SUKSES! ');
-
-} catch (err) {
-  console.log('\x1b[31m%s\x1b[0m', `Error terjadi selama perpindahan: ${err.message}`);
+    execSync('npm run build', { cwd: supplierCorePath, stdio: 'inherit', shell: true });
+  } catch { console.log('Build Sentra gagal.'); }
 }
+
+console.log('\n\x1b[42m\x1b[30m%s\x1b[0m', ` SELESAI — MODE: ${target.toUpperCase()} `);

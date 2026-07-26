@@ -22,7 +22,9 @@ function MarketplaceSuppliersPage() {
   const fetchSuppliers = async (searchVal = '') => {
     setLoading(true);
     try {
-      const url = `http://intigizi-supplier-api.test/app/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
+      const supplierApiBase = import.meta.env.VITE_SUPPLIER_API_URL || 'http://intigizi-supplier-api.test/app';
+      const url = `${supplierApiBase}/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
+
       const res = await fetch(url);
       const data = await res.json();
       setSuppliers(Array.isArray(data) ? data : []);
@@ -69,7 +71,9 @@ function MarketplaceSuppliersPage() {
     if (!supplierDetails[supplierId]) {
       setDetailsLoading(prev => ({ ...prev, [supplierId]: true }));
       try {
-        const url = `http://intigizi-supplier-api.test/app/marketplace_suppliers.php?id=${supplierId}`;
+        const supplierApiBase = import.meta.env.VITE_SUPPLIER_API_URL || 'http://intigizi-supplier-api.test/app';
+        const url = `${supplierApiBase}/marketplace_suppliers.php?id=${supplierId}`;
+
         const res = await fetch(url);
         const data = await res.json();
         setSupplierDetails(prev => ({ ...prev, [supplierId]: data }));
