@@ -45,6 +45,14 @@ function PublicLayout() {
             >
               Pendanaan Dapur
             </Link>
+            <a
+              href="http://intigizi-supplier-core.test/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white bg-intigizi-orange hover:bg-opacity-90 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-colors"
+            >
+              Sentra IntiGizi
+            </a>
 
             {user ? (
               <Link
@@ -114,6 +122,15 @@ function PublicLayout() {
               >
                 Pendanaan Dapur
               </Link>
+              <a
+                href="http://intigizi-supplier-core.test/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center bg-intigizi-orange text-white mx-3 my-2 px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors text-base font-semibold"
+                onClick={closeAllMenus}
+              >
+                Sentra IntiGizi
+              </a>
 
               <div className="border-t my-2 mx-3"></div>
 
@@ -166,7 +183,7 @@ function PublicLayout() {
               </div>
               <p className="text-white/80 max-w-md">
                 Platform digital terpadu untuk ekosistem pangan profesional.
-                Menghubungkan Mitra Dapur, Vendor, dan Investor dalam satu
+                Menghubungkan Mitra Dapur, Sentra IntiGizi, dan Investor dalam satu
                 sistem yang efisien dan transparan.
               </p>
             </div>
@@ -216,14 +233,6 @@ function PublicLayout() {
                     className="text-white/80 hover:text-white transition-colors"
                   >
                     Pendanaan Dapur
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/vendors"
-                    className="text-white/80 hover:text-white transition-colors"
-                  >
-                    Direktori Vendor
                   </Link>
                 </li>
               </ul>

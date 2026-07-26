@@ -131,8 +131,6 @@ function App() {
           <Route path="/tutorial" element={<TutorialPage />} />
           <Route path="/info-sertifikasi" element={<InfoPlangPage />} />
           <Route path="/faq" element={<FaqPage />} />
-          <Route path="/vendors" element={<VendorDirectoryPage />} />
-          <Route path="/vendors/:vendorId" element={<VendorDetailPage />} />
           <Route path="/lacak-distribusi" element={<TrackDistributionPage />} />
           <Route path="/dapur/:slug" element={<KitchenProfilePage />} />
           <Route path="/funding" element={<PublicFundingListPage />} />

@@ -112,7 +112,7 @@ function LandingPage() {
                 <span className="text-intigizi-green">Dapur Profesional</span>
               </h1>
               <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-8 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                IntiGizi menghubungkan Dapur Mitra, Vendor, dan Investor dalam
+                IntiGizi menghubungkan Dapur Mitra, Sentra IntiGizi, dan Investor dalam
                 satu ekosistem digital. Kelola operasional lebih cerdas,
                 efisien, dan transparan.
               </p>
@@ -209,7 +209,7 @@ function LandingPage() {
               icon={<ShieldCheck size={32} className="text-white" />}
               color="bg-intigizi-green"
               title="Standar Terjamin"
-              desc="Semua mitra dapur dan vendor melalui proses verifikasi ketat untuk menjamin kualitas."
+              desc="Semua mitra dapur dan supplier melalui proses verifikasi ketat untuk menjamin kualitas."
             />
             <FeatureItem
               icon={<BarChart3 size={32} className="text-white" />}
