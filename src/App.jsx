@@ -191,10 +191,10 @@ function App() {
           <Route path="admin/dashboard" element={<SuperAdminDashboardPage />} />
           <Route path="admin/analytics" element={<SuperAdminAnalyticsPage />} />
           <Route path="admin/kitchen-partners" element={<KitchenPartnersPage />} />
-          <Route path="admin/vendors" element={<VendorsPage />} />
+          <Route path="admin/vendors" element={<Navigate to="/app/admin/dashboard" replace />} />
           <Route path="admin/organizations/:orgId" element={<OrganizationDetailPage />} />
           <Route path="admin/pending-registrations" element={<PendingRegistrationsPage />} />
-          <Route path="admin/vendor-categories" element={<VendorCategoriesPage />} />
+          <Route path="admin/vendor-categories" element={<Navigate to="/app/admin/dashboard" replace />} />
           <Route path="admin/expense-categories" element={<ExpenseCategoriesPage />} />
           <Route path="admin/beneficiary-categories" element={<BeneficiaryCategoriesPage />} />
           <Route path="admin/funding-applications" element={<FundingApplicationsPage />} />

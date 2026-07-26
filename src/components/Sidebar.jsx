@@ -363,7 +363,6 @@ function Sidebar({ isOpen, setIsOpen }) {
                 {renderCategory("platform", "Manajemen Platform", (
                   <>
                     {renderLink("/app/admin/kitchen-partners", Building, "Mitra Dapur")}
-                    {renderLink("/app/admin/vendors", Store, "Vendor")}
                     {renderLink("/app/admin/pending-registrations", UserCheck, "Persetujuan")}
                   </>
                 ))}
@@ -385,7 +384,6 @@ function Sidebar({ isOpen, setIsOpen }) {
 
                 {renderCategory("konfigurasi", "Konfigurasi", (
                   <>
-                    {renderLink("/app/admin/vendor-categories", Store, "Kategori Vendor")}
                     {renderLink("/app/admin/expense-categories", Wallet, "Kategori Biaya")}
                     {renderLink("/app/admin/beneficiary-categories", UserPlus, "Kategori Penerima")}
                     {renderLink("/app/admin/backup-restore", Database, "Backup & Restore")}
