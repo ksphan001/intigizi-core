@@ -346,12 +346,12 @@ function PurchaseOrderDetailPage() {
         </div>
         <div className="border-t my-4"></div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <DetailItem label="Pemasok" value={po.supplier_name} />
+          <DetailItem label="Supplier" value={po.supplier_name} />
           <DetailItem
             label="Proposal Terkait"
             value={po.proposal_code || "Manual"}
           />
-          <DetailItem label="Status Vendor" value={po.vendor_status} />
+          <DetailItem label="Status Supplier" value={po.vendor_status} />
           <DetailItem
             label="Total Nilai PO"
             value={formatCurrency(
@@ -406,7 +406,7 @@ function PurchaseOrderDetailPage() {
           Aksi yang Tersedia
         </h2>
         <div className="p-4 bg-gray-50 rounded-lg">
-          {/* Aksi untuk Vendor */}
+          {/* Aksi untuk Supplier */}
           {isVendor && po.vendor_status === "Menunggu Konfirmasi" && (
             <div>
               <p className="text-sm font-semibold mb-2">
@@ -481,7 +481,7 @@ function PurchaseOrderDetailPage() {
           {!isVendor && po.status === "Menunggu Persetujuan Harga" && (
             <div>
               <p className="text-sm font-semibold mb-2">
-                Vendor telah mengirimkan penawaran harga baru. Silakan tinjau
+                Supplier telah mengirimkan penawaran harga baru. Silakan tinjau
                 dan berikan persetujuan.
               </p>
               <div className="flex items-center space-x-2">
@@ -539,7 +539,7 @@ function PurchaseOrderDetailPage() {
             po.invoice_path && (
               <div>
                 <p className="text-sm font-semibold mb-2">
-                  Vendor telah mengirim invoice. Jika semua barang sudah
+                  Supplier telah mengirim invoice. Jika semua barang sudah
                   diterima, selesaikan pesanan ini.
                 </p>
                 <div className="flex items-center gap-4">
@@ -571,7 +571,7 @@ function PurchaseOrderDetailPage() {
             )}
 
           {/* Pesan default jika tidak ada aksi */}
-          {["Dikirim", "Diverifikasi", "Ditolak Vendor"].includes(
+          {["Dikirim", "Diverifikasi", "Ditolak Supplier"].includes(
             po.status,
           ) && (
             <p className="text-sm text-gray-600">
@@ -590,7 +590,7 @@ function PurchaseOrderDetailPage() {
             po.status === "Pembayaran Terkirim" &&
             !po.invoice_path && (
               <p className="text-sm text-gray-600">
-                Menunggu vendor mengunggah invoice.
+                Menunggu supplier mengunggah invoice.
               </p>
             )}
           {!isVendor &&
