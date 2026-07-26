@@ -290,6 +290,7 @@ function PurchaseOrderDetailPage() {
 
   const isActionable = isVendor && po.vendor_status === "Menunggu Konfirmasi";
   const isB2B = isVendor || (po.supplier_id && po.marketplace_id && po.supplier_name !== "Belum Ditentukan");
+  const isNegotiating = isB2B && (po.status === "Menunggu Persetujuan Harga" || po.vendor_status === "Menunggu Konfirmasi");
 
   return (
     <div className="space-y-6">
@@ -613,8 +614,14 @@ function PurchaseOrderDetailPage() {
               <tr>
                 <th className="px-4 py-2 text-left">Bahan</th>
                 <th className="px-4 py-2 text-right">Kuantitas</th>
-                <th className="px-4 py-2 text-right">Harga Satuan (Dapur)</th>
-                {isB2B && <th className="px-4 py-2 text-right">Harga Satuan (Vendor)</th>}
+                {isNegotiating ? (
+                  <>
+                    <th className="px-4 py-2 text-right">Harga Satuan (Dapur)</th>
+                    <th className="px-4 py-2 text-right">Harga Satuan (Vendor)</th>
+                  </>
+                ) : (
+                  <th className="px-4 py-2 text-right">Harga Satuan</th>
+                )}
                 <th className="px-4 py-2 text-right">Subtotal</th>
               </tr>
             </thead>
@@ -631,27 +638,33 @@ function PurchaseOrderDetailPage() {
                     {parseFloat(item.quantity).toLocaleString("id-ID")}{" "}
                     {item.unit_symbol}
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-500">
-                    {formatCurrency(item.price_per_unit)}
-                  </td>
-                  {isB2B && (
-                    <td className="px-4 py-3 text-right">
-                      {isVendor && po.vendor_status === "Menunggu Konfirmasi" ? (
-                        <input
-                          type="number"
-                          value={item.vendor_price}
-                          onChange={(e) =>
-                            handlePriceChange(item.id, e.target.value)
-                          }
-                          className="input-style max-w-[120px] text-right ml-auto"
-                        />
-                      ) : (
-                        <span className="font-semibold text-intigizi-orange">
-                          {item.vendor_price_per_unit
-                            ? formatCurrency(item.vendor_price_per_unit)
-                            : formatCurrency(item.price_per_unit)}
-                        </span>
-                      )}
+                  {isNegotiating ? (
+                    <>
+                      <td className="px-4 py-3 text-right text-gray-500">
+                        {formatCurrency(item.price_per_unit)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {isVendor && po.vendor_status === "Menunggu Konfirmasi" ? (
+                          <input
+                            type="number"
+                            value={item.vendor_price}
+                            onChange={(e) =>
+                              handlePriceChange(item.id, e.target.value)
+                            }
+                            className="input-style max-w-[120px] text-right ml-auto"
+                          />
+                        ) : (
+                          <span className="font-semibold text-intigizi-orange">
+                            {item.vendor_price_per_unit
+                              ? formatCurrency(item.vendor_price_per_unit)
+                              : formatCurrency(item.price_per_unit)}
+                          </span>
+                        )}
+                      </td>
+                    </>
+                  ) : (
+                    <td className="px-4 py-3 text-right font-medium text-gray-700">
+                      {formatCurrency(item.vendor_price_per_unit ?? item.price_per_unit)}
                     </td>
                   )}
                   <td className="px-4 py-3 text-right font-semibold">
@@ -667,7 +680,7 @@ function PurchaseOrderDetailPage() {
             </tbody>
             <tfoot className="bg-gray-50 font-bold">
               <tr>
-                <td colSpan={isB2B ? "4" : "3"} className="px-4 py-3 text-right">
+                <td colSpan={isNegotiating ? "4" : "3"} className="px-4 py-3 text-right">
                   TOTAL
                 </td>
                 <td className="px-4 py-3 text-right">
