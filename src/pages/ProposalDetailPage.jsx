@@ -247,93 +247,107 @@ const PrintBudgetModal = ({ isOpen, onClose, calculation, schedule, proposal }) 
           <p className="text-xs text-gray-400 mt-1">Periode: {proposal.start_date} s/d {proposal.end_date}</p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 border text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left font-bold text-gray-700 border">Nama Menu / Masakan</th>
-                <th className="px-4 py-3 text-left font-bold text-gray-700 border">Kategori Sasaran</th>
-                <th className="px-4 py-3 text-right font-bold text-gray-700 border">Kebutuhan Anak (PM)</th>
-                <th className="px-4 py-3 text-right font-bold text-gray-700 border">Food Cost per Porsi</th>
-                <th className="px-4 py-3 text-right font-bold text-gray-700 border">Jumlah Hari</th>
-                <th className="px-4 py-3 text-right font-bold text-gray-700 border">Subtotal Anggaran</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {calculation.menu_details && calculation.menu_details.map((menu) => {
-                const days = menuDaysCount[menu.menu_id] || 0;
-                if (days === 0) return null; // Abaikan jika menu tidak pernah disajikan
+        <div className="space-y-8">
+          {calculation.menu_details && calculation.menu_details.map((menu) => {
+            const days = menuDaysCount[menu.menu_id] || 0;
+            if (days === 0) return null; // Abaikan jika menu tidak pernah disajikan
 
-                // Kita tampung baris-baris tr ke dalam array untuk dirender
-                const rows = [];
-                menu.details_per_category.forEach((detail, catIndex) => {
-                  const pmCount = targetRecipients[detail.category_id] || 0;
-                  const hpp = detail.hpp || 0;
-                  const subtotal = hpp * pmCount * days;
-                  grandTotal += subtotal;
+            let menuTotal = 0;
 
-                  // Baris Kategori Utama
-                  rows.push(
-                    <tr key={`${menu.menu_id}-${detail.category_id}-header`} className="bg-gray-50/50 hover:bg-gray-100 font-medium">
-                      {catIndex === 0 ? (
-                        <td className="px-4 py-3 font-bold text-gray-900 border text-base" rowSpan={menu.details_per_category.reduce((sum, d) => sum + 1 + (d.ingredients_breakdown?.length || 0), 0)}>
-                          {menu.menu_name}
-                        </td>
-                      ) : null}
-                      <td className="px-4 py-3 text-gray-800 font-bold border">{detail.category_name}</td>
-                      <td className="px-4 py-3 text-right text-gray-700 font-semibold border">{pmCount.toLocaleString('id-ID')} anak</td>
-                      <td className="px-4 py-3 text-right text-intigizi-orange font-bold border">{formatCurrency(hpp)}</td>
-                      <td className="px-4 py-3 text-right text-gray-700 border">{days} hari</td>
-                      <td className="px-4 py-3 text-right font-bold text-gray-950 border">{formatCurrency(subtotal)}</td>
-                    </tr>
-                  );
+            return (
+              <div key={menu.menu_id} className="border rounded-xl p-4 bg-white shadow-sm page-break-inside-avoid">
+                {/* Header Sub-Menu */}
+                <div className="flex justify-between items-center border-b pb-2 mb-3 bg-gray-50 -mx-4 -mt-4 p-3 rounded-t-xl">
+                  <h3 className="text-base font-bold text-gray-800 flex items-center">
+                    <CookingPot size={18} className="mr-2 text-intigizi-green" />
+                    {menu.menu_name}
+                  </h3>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-intigizi-green-light text-intigizi-green-dark rounded-full">
+                    Disajikan: {days} Hari
+                  </span>
+                </div>
 
-                  // Baris-baris Breakdown Bahan Baku
-                  if (detail.ingredients_breakdown && detail.ingredients_breakdown.length > 0) {
-                    detail.ingredients_breakdown.forEach((ing, ingIndex) => {
-                      const total_ing_qty = (ing.gross_weight_g / 1000) * pmCount * days; // total dalam Kg/satuan base unit
-                      const total_ing_cost = ing.cost * pmCount * days;
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 border text-xs">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-bold text-gray-700 border">Kategori Sasaran / Bahan Baku</th>
+                        <th className="px-3 py-2 text-right font-bold text-gray-700 border">Penerima (PM) / Porsi</th>
+                        <th className="px-3 py-2 text-right font-bold text-gray-700 border">Food Cost / Porsi</th>
+                        <th className="px-3 py-2 text-right font-bold text-gray-700 border">Faktor BDD</th>
+                        <th className="px-3 py-2 text-right font-bold text-gray-700 border">Subtotal Biaya</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {menu.details_per_category.map((detail) => {
+                        const pmCount = targetRecipients[detail.category_id] || 0;
+                        const hpp = detail.hpp || 0;
+                        const subtotal = hpp * pmCount * days;
+                        menuTotal += subtotal;
+                        grandTotal += subtotal;
 
-                      rows.push(
-                        <tr key={`${menu.menu_id}-${detail.category_id}-ing-${ingIndex}`} className="text-xs text-gray-600 hover:bg-gray-50 border-b">
-                          <td className="px-6 py-2 border-r italic text-gray-500 pl-8">
-                            ↳ {ing.ingredient_name}
-                          </td>
-                          <td className="px-4 py-2 text-right border-r text-gray-500">
-                            {ing.gross_weight_g} g <span className="text-[10px] text-gray-400 font-light">(kotor)</span>
-                          </td>
-                          <td className="px-4 py-2 text-right border-r text-gray-500">
-                            {formatCurrency(ing.cost)} <span className="text-[10px] text-gray-400 font-light">/porsi</span>
-                          </td>
-                          <td className="px-4 py-2 text-right border-r text-gray-400">
-                            {ing.bdd}% BDD
-                          </td>
-                          <td className="px-4 py-2 text-right font-medium text-gray-600">
-                            {formatCurrency(total_ing_cost)}
-                          </td>
-                        </tr>
-                      );
-                    });
-                  }
-                });
+                        return (
+                          <React.Fragment key={`${menu.menu_id}-${detail.category_id}`}>
+                            {/* Baris Kategori Utama */}
+                            <tr className="bg-gray-50/70 font-semibold text-gray-900">
+                              <td className="px-3 py-2 border font-bold text-intigizi-green-dark">{detail.category_name}</td>
+                              <td className="px-3 py-2 text-right border">{pmCount.toLocaleString('id-ID')} anak</td>
+                              <td className="px-3 py-2 text-right text-intigizi-orange border">{formatCurrency(hpp)}</td>
+                              <td className="px-3 py-2 text-right border">-</td>
+                              <td className="px-3 py-2 text-right font-bold text-gray-900 border">{formatCurrency(subtotal)}</td>
+                            </tr>
+                            
+                            {/* Baris Detail Bahan */}
+                            {detail.ingredients_breakdown && detail.ingredients_breakdown.map((ing, ingIndex) => {
+                              const total_ing_cost = ing.cost * pmCount * days;
+                              return (
+                                <tr key={`${menu.menu_id}-${detail.category_id}-ing-${ingIndex}`} className="text-[11px] text-gray-500 bg-white hover:bg-gray-50/50">
+                                  <td className="px-5 py-1.5 border italic pl-8">
+                                    ↳ {ing.ingredient_name}
+                                  </td>
+                                  <td className="px-3 py-1.5 text-right border">
+                                    {ing.gross_weight_g} g <span className="text-[9px] text-gray-400 font-light">(kotor)</span>
+                                  </td>
+                                  <td className="px-3 py-1.5 text-right border">
+                                    {formatCurrency(ing.cost)}
+                                  </td>
+                                  <td className="px-3 py-1.5 text-right border text-gray-450">
+                                    {ing.bdd}% BDD
+                                  </td>
+                                  <td className="px-3 py-1.5 text-right border text-gray-600">
+                                    {formatCurrency(total_ing_cost)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-gray-50 font-bold">
+                      <tr>
+                        <td colSpan="4" className="px-3 py-2 text-right text-gray-700 border">TOTAL ANGGARAN MENU: {menu.menu_name}</td>
+                        <td className="px-3 py-2 text-right text-gray-900 border">{formatCurrency(menuTotal)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            );
+          })}
 
-                return rows;
-              })}
-              {grandTotal === 0 && (
-                <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500 italic">Jadwalkan menu di kalender terlebih dahulu untuk menghitung anggaran.</td>
-                </tr>
-              )}
-            </tbody>
-            {grandTotal > 0 && (
-              <tfoot className="bg-gray-100 font-bold">
-                <tr>
-                  <td colSpan="5" className="px-4 py-3 text-right text-gray-700 border">TOTAL ANGGARAN MASAKAN</td>
-                  <td className="px-4 py-3 text-right text-lg text-green-700 border">{formatCurrency(grandTotal)}</td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
+          {grandTotal === 0 && (
+            <div className="text-center py-8 text-gray-500 italic border rounded-xl bg-gray-50">
+              Jadwalkan menu di kalender terlebih dahulu untuk menghitung anggaran.
+            </div>
+          )}
+
+          {grandTotal > 0 && (
+            <div className="bg-green-50 border border-green-200 p-4 rounded-xl flex justify-between items-center font-bold text-sm">
+              <span className="text-green-800 text-base">TOTAL KESELURUHAN ANGGARAN MASAKAN</span>
+              <span className="text-green-700 text-xl">{formatCurrency(grandTotal)}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end space-x-3 no-print mt-6 border-t pt-4">
