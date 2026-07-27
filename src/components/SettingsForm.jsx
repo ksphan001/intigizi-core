@@ -126,7 +126,7 @@ function SettingsForm({ initialData, onSave, loading }) {
             </label>
             <div className="flex items-center">
               <span className="text-gray-500 bg-gray-100 p-2.5 rounded-l-md border border-r-0">
-                intigizi.com/dapur/
+                {window.location.host}/dapur/
               </span>
               <input
                 type="text"
