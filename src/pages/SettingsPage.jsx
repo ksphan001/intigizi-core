@@ -125,6 +125,7 @@ function SettingsPage() {
   const [hppLimits, setHppLimits] = useState([]);
   const [limitsLoading, setLimitsLoading] = useState(false);
   const [limitsSaving, setLimitsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("profile"); // profile, hpp, printer, gallery
 
   const { showNotification } = useNotification();
 
@@ -348,302 +349,348 @@ function SettingsPage() {
     <div className="container mx-auto px-4 py-8">
       <PageHeader title="Pengaturan Organisasi" />
 
-      <form
-        onSubmit={handleFormSubmit}
-        className="space-y-6 bg-white p-6 rounded-lg shadow"
-      >
-        {/* Bagian Profil Publik */}
-        <h3 className="text-lg font-semibold border-b pb-2">Profil Publik</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Kolom Kiri: Info */}
-          <div className="md:col-span-2 space-y-4">
-            <div>
-              <label
-                htmlFor="slug"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Link Profil Publik (Slug)
-              </label>
-              <div className="flex items-center mt-1">
-                <span className="text-sm text-gray-500 bg-gray-100 p-2.5 rounded-l-md border border-r-0">
-                  {window.location.host}/dapur/
-                </span>
-                <input
-                  type="text"
-                  name="slug"
-                  id="slug"
-                  value={formData.slug}
+      {/* Tab Bar Navigation */}
+      <div className="flex border-b border-gray-200 mb-6 overflow-x-auto no-scrollbar space-x-2">
+        <button
+          onClick={() => setActiveTab("profile")}
+          className={`px-4 py-2.5 font-bold text-sm border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "profile"
+              ? "border-intigizi-green text-intigizi-green-dark"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          📝 Profil & Lokasi
+        </button>
+        <button
+          onClick={() => setActiveTab("hpp")}
+          className={`px-4 py-2.5 font-bold text-sm border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "hpp"
+              ? "border-intigizi-green text-intigizi-green-dark"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          💰 Batas HPP Kategori
+        </button>
+        <button
+          onClick={() => setActiveTab("printer")}
+          className={`px-4 py-2.5 font-bold text-sm border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "printer"
+              ? "border-intigizi-green text-intigizi-green-dark"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          🖨️ Printer Kasir
+        </button>
+        <button
+          onClick={() => setActiveTab("gallery")}
+          className={`px-4 py-2.5 font-bold text-sm border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "gallery"
+              ? "border-intigizi-green text-intigizi-green-dark"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          🖼️ Galeri Publik Dapur
+        </button>
+      </div>
+
+      {/* Tab Content Rendering */}
+      {activeTab === "profile" && (
+        <form
+          onSubmit={handleFormSubmit}
+          className="space-y-6 bg-white p-6 rounded-lg shadow"
+        >
+          {/* Bagian Profil Publik */}
+          <h3 className="text-lg font-semibold border-b pb-2">Profil Publik</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Kolom Kiri: Info */}
+            <div className="md:col-span-2 space-y-4">
+              <div>
+                <label
+                  htmlFor="slug"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Nama Alamat Halaman Profil (Unik)
+                </label>
+                <div className="flex items-center mt-1">
+                  <span className="text-sm text-gray-500 bg-gray-100 p-2.5 rounded-l-md border border-r-0">
+                    {window.location.host}/dapur/
+                  </span>
+                  <input
+                    type="text"
+                    name="slug"
+                    id="slug"
+                    value={formData.slug}
+                    onChange={handleFormChange}
+                    className="input-style rounded-l-none"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Hanya boleh berisi huruf, angka, dan tanda hubung (-).
+                </p>
+              </div>
+              <div>
+                <label
+                  htmlFor="public_description"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Deskripsi Publik
+                </label>
+                <textarea
+                  name="public_description"
+                  id="public_description"
+                  rows="4"
+                  value={formData.public_description}
                   onChange={handleFormChange}
-                  className="input-style rounded-l-none"
+                  className="input-style"
+                  placeholder="Ceritakan tentang dapur Anda..."
                 />
               </div>
+            </div>
+            {/* Kolom Kanan: Foto Profil */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Foto Profil Publik
+              </label>
+              <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                {formData.profile_picture ? (
+                  <img
+                    src={URL.createObjectURL(formData.profile_picture)}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : currentProfilePicture ? (
+                  <img
+                    src={`${API_BASE_URL.replace("/app", "")}${currentProfilePicture}`}
+                    alt="Foto Profil"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <ImageIcon size={48} className="text-gray-400" />
+                )}
+              </div>
+              <input
+                type="file"
+                name="profile_picture"
+                id="profile_picture"
+                onChange={handleFileChange}
+                className="input-style"
+                accept="image/*"
+              />
+            </div>
+          </div>
+
+          {/* Bagian Lokasi Dapur Utama */}
+          <h3 className="text-lg font-semibold border-b pb-2">
+            Lokasi Dapur Utama
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="kitchen_name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Nama Dapur Publik
+              </label>
+              <input
+                type="text"
+                name="kitchen_name"
+                id="kitchen_name"
+                value={formData.kitchen_name}
+                onChange={handleFormChange}
+                className="input-style"
+                placeholder="Cth: Dapur Sehat Ceria"
+                required
+              />
               <p className="text-xs text-gray-500 mt-1">
-                Hanya boleh berisi huruf, angka, dan tanda hubung (-).
+                Nama ini akan tampil di halaman publik (Landing Page, Profil Dapur).
               </p>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Tandai Lokasi di Peta
+              </label>
+              <div className="mt-1 h-80 rounded-lg overflow-hidden border">
+                <MapPicker
+                  onLocationChange={handleLocationChange}
+                  initialPosition={mapInitialPosition}
+                  activeTab={true} // Selalu aktif
+                />
+              </div>
+            </div>
+            <div>
               <label
-                htmlFor="public_description"
+                htmlFor="kitchen_address"
                 className="block text-sm font-medium text-gray-700"
               >
-                Deskripsi Publik
+                Alamat Dapur Utama
               </label>
               <textarea
-                name="public_description"
-                id="public_description"
-                rows="4"
-                value={formData.public_description}
+                name="kitchen_address"
+                id="kitchen_address"
+                rows="2"
+                value={formData.kitchen_address}
                 onChange={handleFormChange}
                 className="input-style"
-                placeholder="Ceritakan tentang dapur Anda..."
+                placeholder="Akan terisi otomatis dari peta, atau isi manual"
+                required
               />
             </div>
           </div>
-          {/* Kolom Kanan: Foto Profil */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Foto Profil Publik
-            </label>
-            <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-              {formData.profile_picture ? (
-                <img
-                  src={URL.createObjectURL(formData.profile_picture)}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                />
-              ) : currentProfilePicture ? (
-                <img
-                  src={`${API_BASE_URL.replace("/app", "")}${currentProfilePicture}`}
-                  alt="Foto Profil"
-                  className="w-full h-full object-cover"
-                />
+
+          <div className="flex justify-end pt-4">
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? (
+                <Loader2 className="animate-spin" />
               ) : (
-                <ImageIcon size={48} className="text-gray-400" />
+                "Simpan Profil"
               )}
-            </div>
-            <input
-              type="file"
-              name="profile_picture"
-              id="profile_picture"
-              onChange={handleFileChange}
-              className="input-style"
-              accept="image/*"
-            />
+            </button>
           </div>
-        </div>
+        </form>
+      )}
 
-        {/* Bagian Lokasi Dapur Utama */}
-        <h3 className="text-lg font-semibold border-b pb-2">
-          Lokasi Dapur Utama
-        </h3>
-        <div className="space-y-4">
-          {/* --- PERBAIKAN: Input Nama Dapur ditambahkan --- */}
-          <div>
-            <label
-              htmlFor="kitchen_name"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Nama Dapur Publik
-            </label>
-            <input
-              type="text"
-              name="kitchen_name"
-              id="kitchen_name"
-              value={formData.kitchen_name}
-              onChange={handleFormChange}
-              className="input-style"
-              placeholder="Cth: Dapur Sehat Ceria"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Nama ini akan tampil di halaman publik (Landing Page, Profil
-              Dapur).
-            </p>
-          </div>
-          {/* --- AKHIR PERBAIKAN --- */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Tandai Lokasi di Peta
-            </label>
-            <div className="mt-1 h-80 rounded-lg overflow-hidden border">
-              <MapPicker
-                onLocationChange={handleLocationChange}
-                initialPosition={mapInitialPosition}
-                activeTab={true} // Selalu aktif
+      {activeTab === "hpp" && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold border-b pb-2 mb-4">
+            Pagu Batas HPP per Kategori Sasaran
+          </h3>
+          
+          {limitsLoading ? (
+            <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
+          ) : (
+            <form onSubmit={handleHppLimitsSave} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {hppLimits.map((item, index) => (
+                  <div key={item.category_id} className="p-3 bg-gray-50 rounded-xl border flex items-center justify-between gap-3">
+                    <span className="text-sm font-semibold text-gray-700">{item.category_name}</span>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-2 text-[11px] text-gray-400 font-bold">Rp</span>
+                      <input
+                        type="number"
+                        value={item.max_hpp}
+                        onChange={(e) => handleHppLimitChange(index, e.target.value)}
+                        className="input-style w-32 pl-8 text-xs font-bold text-intigizi-orange text-right"
+                        required
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex justify-end pt-2">
+                <button type="submit" className="btn-primary flex items-center text-xs" disabled={limitsSaving}>
+                  {limitsSaving ? <Loader2 className="animate-spin mr-1.5" size={14} /> : null}
+                  Simpan Batas HPP Dapur
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
+      {activeTab === "printer" && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold border-b pb-2 mb-4">
+            Pengaturan Printer Thermal (Bluetooth)
+          </h3>
+          <PrinterSettingsSection />
+        </div>
+      )}
+
+      {activeTab === "gallery" && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold border-b pb-2 mb-4">
+            Galeri Publik Dapur
+          </h3>
+
+          {/* Form Upload */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 border rounded-lg bg-gray-50">
+            <div className="flex-1">
+              <label
+                htmlFor="gallery_upload"
+                className="block text-sm font-medium text-gray-700"
+              >
+                File Gambar Baru
+              </label>
+              <input
+                type="file"
+                id="gallery_upload"
+                onChange={handleGalleryFileChange}
+                className="input-style"
+                accept="image/*"
               />
             </div>
+            <div className="flex-1">
+              <label
+                htmlFor="gallery_caption"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Keterangan (Opsional)
+              </label>
+              <input
+                type="text"
+                id="gallery_caption"
+                value={newGalleryCaption}
+                onChange={(e) => setNewGalleryCaption(e.target.value)}
+                className="input-style"
+                placeholder="Misal: Dapur saat produksi..."
+              />
+            </div>
+            <div className="flex-shrink-0 md:self-end">
+              <button
+                onClick={handleGalleryUpload}
+                className="btn-primary w-full md:w-auto"
+                disabled={galleryLoading || !newGalleryImage}
+              >
+                {galleryLoading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Upload size={20} />
+                )}
+                <span className="ml-2">Unggah</span>
+              </button>
+            </div>
           </div>
-          <div>
-            <label
-              htmlFor="kitchen_address"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Alamat Dapur Utama
-            </label>
-            <textarea
-              name="kitchen_address"
-              id="kitchen_address"
-              rows="2"
-              value={formData.kitchen_address}
-              onChange={handleFormChange}
-              className="input-style"
-              placeholder="Akan terisi otomatis dari peta, atau isi manual"
-              required
-            />
-          </div>
-        </div>
 
-        <div className="flex justify-end pt-4">
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? (
+          {/* Tampilan Galeri */}
+          {galleryLoading && gallery.length === 0 ? (
+            <div className="flex justify-center items-center h-32">
               <Loader2 className="animate-spin" />
-            ) : (
-              "Simpan Pengaturan"
-            )}
-          </button>
-        </div>
-      </form>
-
-      {/* Bagian Pengaturan Batas HPP per Kategori */}
-      <div className="mt-8 bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold border-b pb-2 mb-4 flex items-center justify-between">
-          <span>Pagu Batas HPP per Kategori Sasaran</span>
-          <span className="text-xs text-gray-500 font-medium normal-case">Mengatur alarm over budget saat menyusun resep</span>
-        </h3>
-        
-        {limitsLoading ? (
-          <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
-        ) : (
-          <form onSubmit={handleHppLimitsSave} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {hppLimits.map((item, index) => (
-                <div key={item.category_id} className="p-3 bg-gray-50 rounded-xl border flex items-center justify-between gap-3">
-                  <span className="text-sm font-semibold text-gray-700">{item.category_name}</span>
-                  <div className="relative">
-                    <span className="absolute left-2.5 top-2 text-[11px] text-gray-400 font-bold">Rp</span>
-                    <input
-                      type="number"
-                      value={item.max_hpp}
-                      onChange={(e) => handleHppLimitChange(index, e.target.value)}
-                      className="input-style w-32 pl-8 text-xs font-bold text-intigizi-orange text-right"
-                      required
-                    />
-                  </div>
+            </div>
+          ) : gallery.length === 0 ? (
+            <p className="text-gray-500 text-center">
+              Belum ada foto di galeri Anda.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {gallery.map((item) => (
+                <div
+                  key={item.id}
+                  className="relative group border rounded-lg overflow-hidden shadow-sm"
+                >
+                  <img
+                    src={`${API_BASE_URL.replace("/app", "")}${item.image_path}`}
+                    alt={item.caption || "Foto Galeri"}
+                    className="w-full h-36 object-cover"
+                  />
+                  {item.caption && (
+                    <p className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 truncate">
+                      {item.caption}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => handleGalleryDelete(item.id)}
+                    className="absolute top-1 right-1 bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Hapus foto"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               ))}
             </div>
-            
-            <div className="flex justify-end pt-2">
-              <button type="submit" className="btn-primary flex items-center text-xs" disabled={limitsSaving}>
-                {limitsSaving ? <Loader2 className="animate-spin mr-1.5" size={14} /> : null}
-                Simpan Batas HPP Dapur
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-
-      {/* Bagian Pengaturan Printer */}
-      <div className="mt-8 bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold border-b pb-2 mb-4">
-          Pengaturan Printer Thermal (Bluetooth)
-        </h3>
-        <PrinterSettingsSection />
-      </div>
-
-      {/* Bagian Galeri Dapur */}
-      <div className="mt-8 bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold border-b pb-2 mb-4">
-          Galeri Publik Dapur
-        </h3>
-
-        {/* Form Upload */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 border rounded-lg bg-gray-50">
-          <div className="flex-1">
-            <label
-              htmlFor="gallery_upload"
-              className="block text-sm font-medium text-gray-700"
-            >
-              File Gambar Baru
-            </label>
-            <input
-              type="file"
-              id="gallery_upload"
-              onChange={handleGalleryFileChange}
-              className="input-style"
-              accept="image/*"
-            />
-          </div>
-          <div className="flex-1">
-            <label
-              htmlFor="gallery_caption"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Keterangan (Opsional)
-            </label>
-            <input
-              type="text"
-              id="gallery_caption"
-              value={newGalleryCaption}
-              onChange={(e) => setNewGalleryCaption(e.target.value)}
-              className="input-style"
-              placeholder="Misal: Dapur saat produksi..."
-            />
-          </div>
-          <div className="flex-shrink-0 md:self-end">
-            <button
-              onClick={handleGalleryUpload}
-              className="btn-primary w-full md:w-auto"
-              disabled={galleryLoading || !newGalleryImage}
-            >
-              {galleryLoading ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <Upload size={20} />
-              )}
-              <span className="ml-2">Unggah</span>
-            </button>
-          </div>
+          )}
         </div>
-
-        {/* Tampilan Galeri */}
-        {galleryLoading && gallery.length === 0 ? (
-          <div className="flex justify-center items-center h-32">
-            <Loader2 className="animate-spin" />
-          </div>
-        ) : gallery.length === 0 ? (
-          <p className="text-gray-500 text-center">
-            Belum ada foto di galeri Anda.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {gallery.map((item) => (
-              <div
-                key={item.id}
-                className="relative group border rounded-lg overflow-hidden shadow-sm"
-              >
-                <img
-                  src={`${API_BASE_URL.replace("/app", "")}${item.image_path}`}
-                  alt={item.caption || "Foto Galeri"}
-                  className="w-full h-36 object-cover"
-                />
-                {item.caption && (
-                  <p className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 truncate">
-                    {item.caption}
-                  </p>
-                )}
-                <button
-                  onClick={() => handleGalleryDelete(item.id)}
-                  className="absolute top-1 right-1 bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Hapus foto"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
