@@ -24,9 +24,10 @@ import {
 } from "lucide-react";
 import { useNotification } from "../context/NotificationContext.jsx";
 
-// PENJELASAN: Diperbarui untuk menampilkan data 'fiber' (serat).
+// PENJELASAN: Diperbarui untuk menampilkan data 'fiber' (serat) dan batas maksimal HPP.
 const CategoryDetailCard = ({ categoryData, formatCurrency }) => {
-  const { category_name, nutrition, hpp } = categoryData;
+  const { category_name, nutrition, hpp, max_hpp } = categoryData;
+  const isOverBudget = max_hpp && parseFloat(hpp || 0) > parseFloat(max_hpp);
 
   const NutritionItem = ({ icon, value, unit }) => (
     <div className="flex items-center space-x-1 text-sm text-gray-700">
@@ -39,14 +40,27 @@ const CategoryDetailCard = ({ categoryData, formatCurrency }) => {
   );
 
   return (
-    <div className="bg-white p-4 rounded-xl shadow-md border flex flex-col transform hover:-translate-y-1 transition-transform duration-300">
+    <div className={`bg-white p-4 rounded-xl shadow-md border flex flex-col transform hover:-translate-y-1 transition-transform duration-300 relative overflow-hidden ${isOverBudget ? 'border-red-300 ring-2 ring-red-500/10' : ''}`}>
+      {isOverBudget && (
+        <div className="absolute top-0 right-0 bg-red-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-bl shadow-sm flex items-center z-10">
+          <AlertTriangle size={10} className="mr-1" /> Over Budget
+        </div>
+      )}
+      
       <div className="flex justify-between items-start mb-3">
-        <h4 className="font-bold text-lg text-intigizi-green-dark">
-          {category_name}
-        </h4>
+        <div>
+          <h4 className="font-bold text-lg text-intigizi-green-dark">
+            {category_name}
+          </h4>
+          {max_hpp && (
+            <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
+              Batas Maks: {formatCurrency(max_hpp)}
+            </p>
+          )}
+        </div>
         <div className="text-right flex-shrink-0 ml-2">
           <p className="text-xs text-gray-500">Estimasi HPP</p>
-          <p className="font-bold text-xl text-intigizi-orange">
+          <p className={`font-bold text-xl ${isOverBudget ? 'text-red-650' : 'text-intigizi-orange'}`}>
             {formatCurrency(hpp)}
           </p>
         </div>
