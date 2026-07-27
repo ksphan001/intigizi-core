@@ -274,7 +274,7 @@ const PrintBudgetModal = ({ isOpen, onClose, calculation, schedule, proposal }) 
                         <th className="px-3 py-2 text-left font-bold text-gray-700 border">Kategori Sasaran / Bahan Baku</th>
                         <th className="px-3 py-2 text-right font-bold text-gray-700 border">Penerima (PM) / Porsi</th>
                         <th className="px-3 py-2 text-right font-bold text-gray-700 border">Food Cost / Porsi</th>
-                        <th className="px-3 py-2 text-right font-bold text-gray-700 border">Faktor BDD</th>
+                        <th className="px-3 py-2 text-right font-bold text-gray-700 border">Harga Acuan Bahan</th>
                         <th className="px-3 py-2 text-right font-bold text-gray-700 border">Subtotal Biaya</th>
                       </tr>
                     </thead>
@@ -313,8 +313,8 @@ const PrintBudgetModal = ({ isOpen, onClose, calculation, schedule, proposal }) 
                                   <td className="px-3 py-1.5 text-right border">
                                     {formatCurrency(ing.cost)}
                                   </td>
-                                  <td className="px-3 py-1.5 text-right border text-gray-450">
-                                    {ing.bdd}% BDD
+                                  <td className="px-3 py-1.5 text-right border text-gray-600">
+                                    {formatCurrency(ing.price_per_unit)} / {ing.unit_symbol || 'Kg'}
                                   </td>
                                   <td className="px-3 py-1.5 text-right border text-gray-600">
                                     {formatCurrency(total_ing_cost)}
