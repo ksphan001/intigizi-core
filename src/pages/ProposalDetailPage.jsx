@@ -272,9 +272,9 @@ const PrintBudgetModal = ({ isOpen, onClose, calculation, schedule, proposal }) 
                     <thead className="bg-gray-100">
                       <tr>
                         <th className="px-3 py-2 text-left font-bold text-gray-700 border">Kategori Sasaran / Bahan Baku</th>
+                        <th className="px-3 py-2 text-right font-bold text-gray-700 border">Harga Acuan Bahan</th>
                         <th className="px-3 py-2 text-right font-bold text-gray-700 border">Penerima (PM) / Porsi</th>
                         <th className="px-3 py-2 text-right font-bold text-gray-700 border">Food Cost / Porsi</th>
-                        <th className="px-3 py-2 text-right font-bold text-gray-700 border">Harga Acuan Bahan</th>
                         <th className="px-3 py-2 text-right font-bold text-gray-700 border">Subtotal Biaya</th>
                       </tr>
                     </thead>
@@ -293,9 +293,9 @@ const PrintBudgetModal = ({ isOpen, onClose, calculation, schedule, proposal }) 
                             {/* Baris Kategori Utama */}
                             <tr className="bg-gray-50/70 font-semibold text-gray-900">
                               <td className="px-3 py-2 border font-bold text-intigizi-green-dark">{detail.category_name}</td>
+                              <td className="px-3 py-2 text-right border font-bold text-gray-400">-</td>
                               <td className="px-3 py-2 text-right border">{pmCount.toLocaleString('id-ID')} anak</td>
                               <td className="px-3 py-2 text-right text-intigizi-orange border">{formatCurrency(hpp)}</td>
-                              <td className="px-3 py-2 text-right border">-</td>
                               <td className="px-3 py-2 text-right font-bold text-gray-900 border">{formatCurrency(subtotal)}</td>
                             </tr>
                             
@@ -307,14 +307,14 @@ const PrintBudgetModal = ({ isOpen, onClose, calculation, schedule, proposal }) 
                                   <td className="px-5 py-1.5 border italic pl-8">
                                     ↳ {ing.ingredient_name}
                                   </td>
+                                  <td className="px-3 py-1.5 text-right border text-gray-600">
+                                    {formatCurrency(ing.price_per_unit)} / {ing.unit_symbol || 'Kg'}
+                                  </td>
                                   <td className="px-3 py-1.5 text-right border">
                                     {ing.gross_weight_g} g <span className="text-[9px] text-gray-400 font-light">(kotor)</span>
                                   </td>
                                   <td className="px-3 py-1.5 text-right border">
                                     {formatCurrency(ing.cost)}
-                                  </td>
-                                  <td className="px-3 py-1.5 text-right border text-gray-600">
-                                    {formatCurrency(ing.price_per_unit)} / {ing.unit_symbol || 'Kg'}
                                   </td>
                                   <td className="px-3 py-1.5 text-right border text-gray-600">
                                     {formatCurrency(total_ing_cost)}
