@@ -141,7 +141,7 @@ function IngredientsPage() {
                 <div className="flex space-x-2">
                     <button onClick={handleSyncPrices} disabled={syncing || loading} className="btn-secondary">
                         {syncing ? <Loader2 className="animate-spin mr-2" size={16} /> : <RefreshCw size={16} className="mr-2" />}
-                        Sync Harga Master
+                        Sesuaikan Harga Acuan
                     </button>
                     <button onClick={() => setIsMasterModalOpen(true)} className="btn-secondary">
                         <Library size={16} className="mr-2" /> Tambah dari Pustaka

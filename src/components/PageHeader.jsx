@@ -22,7 +22,7 @@ const PAGE_GUIDES = {
     desc: "Katalog Bahan Baku Lokal & Harga Acuan",
     steps: [
       "Fungsi Fitur: Mengelola daftar komoditas bahan pangan lokal yang digunakan untuk resep gizi.",
-      "Alur Penggunaan: Tambahkan bahan manual atau impor dari 'Pustaka Bahan'. Klik 'Sync Harga Master' untuk menyesuaikan harga beli lokal secara otomatis dengan rata-rata harga pasar nasional."
+      "Alur Penggunaan: Tambahkan bahan manual atau impor dari 'Pustaka Bahan'. Klik 'Sesuaikan Harga Acuan' untuk menyelaraskan harga beli lokal secara otomatis dengan rata-rata harga pasar nasional."
     ]
   },
   "Manajemen SPPG": {

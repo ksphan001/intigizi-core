@@ -122,7 +122,7 @@ function SettingsForm({ initialData, onSave, loading }) {
               htmlFor="slug"
               className="block text-sm font-medium text-gray-700"
             >
-              Link Profil Unik Anda
+              Nama Alamat Halaman Profil (Unik)
             </label>
             <div className="flex items-center">
               <span className="text-gray-500 bg-gray-100 p-2.5 rounded-l-md border border-r-0">

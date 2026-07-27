@@ -324,7 +324,7 @@ function SettingsPage() {
                 htmlFor="slug"
                 className="block text-sm font-medium text-gray-700"
               >
-                Link Profil Publik (Slug)
+                Nama Alamat Halaman Profil (Unik)
               </label>
               <div className="flex items-center mt-1">
                 <span className="text-sm text-gray-500 bg-gray-100 p-2.5 rounded-l-md border border-r-0">
