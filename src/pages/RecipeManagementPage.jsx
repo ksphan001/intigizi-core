@@ -589,6 +589,7 @@ function RecipeManagementPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingItem ? "Edit Bahan Resep" : "Tambah Bahan ke Resep"}
+        size="2xl"
       >
         <RecipeIngredientForm
           onSave={handleSave}
