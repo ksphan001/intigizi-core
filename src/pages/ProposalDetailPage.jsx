@@ -204,8 +204,8 @@ const PrintBudgetModal = ({ isOpen, onClose, calculation, schedule, proposal }) 
     }
   });
 
-  // 2. Mengambil data penerima manfaat (PM) dari metadata proposal
-  const targetRecipients = proposal.target_recipients ? JSON.parse(proposal.target_recipients) : {};
+  // 2. Mengambil data penerima manfaat (PM) dari data kalkulasi real-time titik distribusi
+  const targetRecipients = calculation.beneficiary_counts || (proposal.target_recipients ? JSON.parse(proposal.target_recipients) : {});
 
   // Formatter uang
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0);
