@@ -122,8 +122,45 @@ function SettingsPage() {
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [newGalleryImage, setNewGalleryImage] = useState(null);
   const [newGalleryCaption, setNewGalleryCaption] = useState("");
+  const [hppLimits, setHppLimits] = useState([]);
+  const [limitsLoading, setLimitsLoading] = useState(false);
+  const [limitsSaving, setLimitsSaving] = useState(false);
 
   const { showNotification } = useNotification();
+
+  const fetchHppLimits = useCallback(async () => {
+    setLimitsLoading(true);
+    try {
+      const response = await apiClient.get("/kitchen_limits_manage.php");
+      setHppLimits(response.data);
+    } catch (err) {
+      showNotification("Gagal memuat batas HPP dapur", "error");
+    } finally {
+      setLimitsLoading(false);
+    }
+  }, [showNotification]);
+
+  const handleHppLimitChange = (index, value) => {
+    setHppLimits(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], max_hpp: parseFloat(value) || 0 };
+      return copy;
+    });
+  };
+
+  const handleHppLimitsSave = async (e) => {
+    e.preventDefault();
+    setLimitsSaving(true);
+    try {
+      const response = await apiClient.post("/kitchen_limits_manage.php", { limits: hppLimits });
+      showNotification(response.data.message, "success");
+      fetchHppLimits();
+    } catch (err) {
+      showNotification(err.response?.data?.message || "Gagal menyimpan batas HPP", "error");
+    } finally {
+      setLimitsSaving(false);
+    }
+  };
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
@@ -169,7 +206,8 @@ function SettingsPage() {
   useEffect(() => {
     fetchSettings();
     fetchGallery();
-  }, [fetchSettings, fetchGallery]);
+    fetchHppLimits();
+  }, [fetchSettings, fetchGallery, fetchHppLimits]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -324,7 +362,7 @@ function SettingsPage() {
                 htmlFor="slug"
                 className="block text-sm font-medium text-gray-700"
               >
-                Nama Alamat Halaman Profil (Unik)
+                Link Profil Publik (Slug)
               </label>
               <div className="flex items-center mt-1">
                 <span className="text-sm text-gray-500 bg-gray-100 p-2.5 rounded-l-md border border-r-0">
@@ -465,6 +503,45 @@ function SettingsPage() {
           </button>
         </div>
       </form>
+
+      {/* Bagian Pengaturan Batas HPP per Kategori */}
+      <div className="mt-8 bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-semibold border-b pb-2 mb-4 flex items-center justify-between">
+          <span>Pagu Batas HPP per Kategori Sasaran</span>
+          <span className="text-xs text-gray-500 font-medium normal-case">Mengatur alarm over budget saat menyusun resep</span>
+        </h3>
+        
+        {limitsLoading ? (
+          <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
+        ) : (
+          <form onSubmit={handleHppLimitsSave} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {hppLimits.map((item, index) => (
+                <div key={item.category_id} className="p-3 bg-gray-50 rounded-xl border flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-gray-700">{item.category_name}</span>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-2 text-[11px] text-gray-400 font-bold">Rp</span>
+                    <input
+                      type="number"
+                      value={item.max_hpp}
+                      onChange={(e) => handleHppLimitChange(index, e.target.value)}
+                      className="input-style w-32 pl-8 text-xs font-bold text-intigizi-orange text-right"
+                      required
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex justify-end pt-2">
+              <button type="submit" className="btn-primary flex items-center text-xs" disabled={limitsSaving}>
+                {limitsSaving ? <Loader2 className="animate-spin mr-1.5" size={14} /> : null}
+                Simpan Batas HPP Dapur
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
 
       {/* Bagian Pengaturan Printer */}
       <div className="mt-8 bg-white p-6 rounded-lg shadow">
