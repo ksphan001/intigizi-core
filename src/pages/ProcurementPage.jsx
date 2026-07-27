@@ -190,10 +190,20 @@ function ProcurementPage() {
       return;
     }
 
+    // Validasi: pastikan semua item sudah dipilih supplier-nya (tidak boleh ada yang kosong)
+    const unselectedItems = itemsWithQuantity.filter(item => !item.selected_supplier_id);
+    if (unselectedItems.length > 0) {
+      showNotification(
+        `Gagal memproses. Mohon pilih supplier terlebih dahulu untuk bahan baku berikut: ${unselectedItems.map(i => i.name).join(", ")}.`,
+        "warning"
+      );
+      return;
+    }
+
     // Kelompokkan item berdasarkan supplier_id
     const groups = {};
     itemsWithQuantity.forEach(item => {
-      const suppId = item.selected_supplier_id || ""; // Kosong berarti Belanja Mandiri
+      const suppId = item.selected_supplier_id;
       if (!groups[suppId]) {
         groups[suppId] = [];
       }
@@ -217,13 +227,13 @@ function ProcurementPage() {
         Object.keys(groups).map(suppId => 
           apiClient.post("/procurement_create_po.php", {
             proposal_id: proposalId,
-            supplier_id: suppId ? parseInt(suppId) : "",
+            supplier_id: parseInt(suppId),
             items: groups[suppId]
           })
         )
       );
       
-      showNotification(`${totalGroups} Purchase Order (termasuk Belanja Mandiri) berhasil diproses.`, "success");
+      showNotification(`${totalGroups} Purchase Order berhasil diproses dan dikirim ke masing-masing supplier.`, "success");
       setIsModalOpen(false);
       setIsConfirmOpen(false);
       fetchProcurementDetails(); // Refresh data
@@ -448,7 +458,7 @@ function ProcurementPage() {
                             }}
                             className="input-style text-xs py-1 px-2.5 w-full bg-white font-medium border-gray-300 focus:border-green-500"
                           >
-                            <option value="">-- Belanja Mandiri (Beli Manual) --</option>
+                            <option value="" disabled>-- Pilih Supplier --</option>
                             {(priceComparisons[item.ingredient_id] || []).map(opt => (
                               <option key={opt.supplier_id} value={opt.supplier_id}>
                                 {opt.supplier_name} {opt.is_verified ? "✓" : ""} - Rp {opt.price.toLocaleString('id-ID')}{opt.distance_km !== null ? ` (${opt.distance_km} km)` : ''}
