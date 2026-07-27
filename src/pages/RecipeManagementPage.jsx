@@ -595,6 +595,7 @@ function RecipeManagementPage() {
           onCancel={() => setIsModalOpen(false)}
           menuId={parseInt(menuId)}
           recipeItem={editingItem}
+          categoryDetails={categoryDetails}
         />
       </Modal>
 
