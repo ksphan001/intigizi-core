@@ -114,8 +114,9 @@ function RecipeIngredientForm({ onSave, onCancel, menuId, recipeItem }) {
     const gram = parseFloat(qty) || 0;
     if (gram <= 0 || !ing || !ing.latest_price) return 0;
 
-    // Default bdd_percentage ke 100% jika null/0
-    const bdd = parseFloat(ing.bdd_percentage || 100) / 100;
+    // Cek format BDD: jika <= 1.0 berarti skala desimal (0.75), jika > 1.0 berarti skala persen (75)
+    const rawBdd = parseFloat(ing.bdd_percentage || 100);
+    const bdd = rawBdd <= 1.0 ? rawBdd : rawBdd / 100;
     const grossWeight = gram / (bdd > 0 ? bdd : 1);
     
     // Asumsikan base unit adalah gram jika conversion_factor tidak diatur
@@ -145,7 +146,7 @@ function RecipeIngredientForm({ onSave, onCancel, menuId, recipeItem }) {
         />
         {selectedIngredient && (
           <p className="text-xs text-gray-500 mt-1">
-            Harga Acuan: <b>{formatCurrency(selectedIngredient.latest_price)}</b> / Kg (BDD: {selectedIngredient.bdd_percentage || 100}%) — 
+            Harga Acuan: <b>{formatCurrency(selectedIngredient.latest_price)}</b> / Kg (BDD: {parseFloat(selectedIngredient.bdd_percentage || 1) <= 1.0 ? parseFloat(selectedIngredient.bdd_percentage || 1) * 100 : selectedIngredient.bdd_percentage}%) — 
             Kategori: <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-bold uppercase ml-1">
               {isCondiment(selectedIngredient.name) ? '🌶️ Bumbu / Condiment' : '🥩 Bahan Utama'}
             </span>
