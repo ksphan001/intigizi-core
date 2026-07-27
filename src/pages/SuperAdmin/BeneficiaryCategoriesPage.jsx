@@ -8,12 +8,13 @@ import { useNotification } from '../../context/NotificationContext.jsx';
 
 // Form untuk menambah/mengedit kategori
 const CategoryForm = ({ category, onSave, onCancel, loading }) => {
-  const [formData, setFormData] = useState({ name: '', sort_order: 0 });
+  const [formData, setFormData] = useState({ name: '', sort_order: 0, max_hpp: 8000 });
 
   useEffect(() => {
     setFormData({
         name: category ? category.name : '',
-        sort_order: category ? category.sort_order : 0
+        sort_order: category ? category.sort_order : 0,
+        max_hpp: category ? parseFloat(category.max_hpp || 8000) : 8000
     });
   }, [category]);
 
@@ -29,8 +30,13 @@ const CategoryForm = ({ category, onSave, onCancel, loading }) => {
         <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="input-style" required />
       </div>
       <div>
+        <label className="block text-sm font-medium text-gray-700">Target HPP Maksimal (Rp)</label>
+        <input type="number" value={formData.max_hpp} onChange={(e) => setFormData({...formData, max_hpp: parseFloat(e.target.value) || 0})} className="input-style" required />
+        <p className="text-xs text-gray-500 mt-1">Batas pagu anggaran porsi makan untuk kategori sasaran ini.</p>
+      </div>
+      <div>
         <label className="block text-sm font-medium text-gray-700">Urutan Tampil</label>
-        <input type="number" value={formData.sort_order} onChange={(e) => setFormData({...formData, sort_order: e.target.value})} className="input-style" />
+        <input type="number" value={formData.sort_order} onChange={(e) => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})} className="input-style" />
         <p className="text-xs text-gray-500 mt-1">Angka lebih kecil akan tampil lebih dulu.</p>
       </div>
       <div className="flex justify-end space-x-3 pt-4">
@@ -112,7 +118,8 @@ function BeneficiaryCategoriesPage() {
               <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                 <tr>
                   <th className="px-6 py-3">Nama Kategori</th>
-                  <th className="px-6 py-3">Urutan</th>
+                  <th className="px-6 py-3 text-right">Target HPP Maksimal</th>
+                  <th className="px-6 py-3 text-center">Urutan</th>
                   <th className="px-6 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
@@ -120,7 +127,10 @@ function BeneficiaryCategoriesPage() {
                 {categories.map((item) => (
                   <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
                     <th className="px-6 py-4 font-medium text-gray-900">{item.name}</th>
-                    <td className="px-6 py-4">{item.sort_order}</td>
+                    <td className="px-6 py-4 text-right font-semibold text-intigizi-orange">
+                      {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(item.max_hpp || 0)}
+                    </td>
+                    <td className="px-6 py-4 text-center">{item.sort_order}</td>
                     <td className="px-6 py-4 flex justify-end space-x-2">
                       <button onClick={() => openEditModal(item)} className="p-1 text-blue-600"><Edit size={16}/></button>
                       <button onClick={() => openDeleteConfirm(item)} className="p-1 text-red-600"><Trash2 size={16}/></button>
