@@ -281,6 +281,8 @@ const PrintBudgetModal = ({ isOpen, onClose, calculation, schedule, proposal }) 
                     <tbody className="divide-y divide-gray-200 bg-white">
                       {menu.details_per_category.map((detail) => {
                         const pmCount = targetRecipients[detail.category_id] || 0;
+                        if (pmCount <= 0) return null; // Abaikan kategori jika tidak ada penerima manfaat terdaftar (PM = 0)
+                        
                         const hpp = detail.hpp || 0;
                         const subtotal = hpp * pmCount * days;
                         menuTotal += subtotal;
