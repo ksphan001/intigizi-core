@@ -264,27 +264,60 @@ const PrintBudgetModal = ({ isOpen, onClose, calculation, schedule, proposal }) 
                 const days = menuDaysCount[menu.menu_id] || 0;
                 if (days === 0) return null; // Abaikan jika menu tidak pernah disajikan
 
-                return menu.details_per_category.map((detail, index) => {
+                // Kita tampung baris-baris tr ke dalam array untuk dirender
+                const rows = [];
+                menu.details_per_category.forEach((detail, catIndex) => {
                   const pmCount = targetRecipients[detail.category_id] || 0;
                   const hpp = detail.hpp || 0;
                   const subtotal = hpp * pmCount * days;
                   grandTotal += subtotal;
 
-                  return (
-                    <tr key={`${menu.menu_id}-${detail.category_id}`} className="hover:bg-gray-50">
-                      {index === 0 ? (
-                        <td className="px-4 py-3 font-semibold text-gray-900 border" rowSpan={menu.details_per_category.length}>
+                  // Baris Kategori Utama
+                  rows.push(
+                    <tr key={`${menu.menu_id}-${detail.category_id}-header`} className="bg-gray-50/50 hover:bg-gray-100 font-medium">
+                      {catIndex === 0 ? (
+                        <td className="px-4 py-3 font-bold text-gray-900 border text-base" rowSpan={menu.details_per_category.reduce((sum, d) => sum + 1 + (d.ingredients_breakdown?.length || 0), 0)}>
                           {menu.menu_name}
                         </td>
                       ) : null}
-                      <td className="px-4 py-3 text-gray-700 border">{detail.category_name}</td>
-                      <td className="px-4 py-3 text-right text-gray-600 border">{pmCount.toLocaleString('id-ID')} anak</td>
-                      <td className="px-4 py-3 text-right text-gray-900 border">{formatCurrency(hpp)}</td>
-                      <td className="px-4 py-3 text-right text-gray-600 border">{days} hari</td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-900 border">{formatCurrency(subtotal)}</td>
+                      <td className="px-4 py-3 text-gray-800 font-bold border">{detail.category_name}</td>
+                      <td className="px-4 py-3 text-right text-gray-700 font-semibold border">{pmCount.toLocaleString('id-ID')} anak</td>
+                      <td className="px-4 py-3 text-right text-intigizi-orange font-bold border">{formatCurrency(hpp)}</td>
+                      <td className="px-4 py-3 text-right text-gray-700 border">{days} hari</td>
+                      <td className="px-4 py-3 text-right font-bold text-gray-950 border">{formatCurrency(subtotal)}</td>
                     </tr>
                   );
+
+                  // Baris-baris Breakdown Bahan Baku
+                  if (detail.ingredients_breakdown && detail.ingredients_breakdown.length > 0) {
+                    detail.ingredients_breakdown.forEach((ing, ingIndex) => {
+                      const total_ing_qty = (ing.gross_weight_g / 1000) * pmCount * days; // total dalam Kg/satuan base unit
+                      const total_ing_cost = ing.cost * pmCount * days;
+
+                      rows.push(
+                        <tr key={`${menu.menu_id}-${detail.category_id}-ing-${ingIndex}`} className="text-xs text-gray-600 hover:bg-gray-50 border-b">
+                          <td className="px-6 py-2 border-r italic text-gray-500 pl-8">
+                            ↳ {ing.ingredient_name}
+                          </td>
+                          <td className="px-4 py-2 text-right border-r text-gray-500">
+                            {ing.gross_weight_g} g <span className="text-[10px] text-gray-400 font-light">(kotor)</span>
+                          </td>
+                          <td className="px-4 py-2 text-right border-r text-gray-500">
+                            {formatCurrency(ing.cost)} <span className="text-[10px] text-gray-400 font-light">/porsi</span>
+                          </td>
+                          <td className="px-4 py-2 text-right border-r text-gray-400">
+                            {ing.bdd}% BDD
+                          </td>
+                          <td className="px-4 py-2 text-right font-medium text-gray-600">
+                            {formatCurrency(total_ing_cost)}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  }
                 });
+
+                return rows;
               })}
               {grandTotal === 0 && (
                 <tr>
