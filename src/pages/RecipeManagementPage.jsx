@@ -17,7 +17,11 @@ import {
   Loader2,
   Users,
   Leaf,
-} from "lucide-react"; // Impor ikon Leaf
+  Calculator,
+  Sparkles,
+  RefreshCw,
+  AlertTriangle,
+} from "lucide-react";
 import { useNotification } from "../context/NotificationContext.jsx";
 
 // PENJELASAN: Diperbarui untuk menampilkan data 'fiber' (serat).
@@ -74,6 +78,221 @@ const CategoryDetailCard = ({ categoryData, formatCurrency }) => {
           value={nutrition.total_fat}
           unit="g"
         />
+      </div>
+    </div>
+  );
+};
+
+const HPPOptimizer = ({ recipe, categoryDetails, formatCurrency }) => {
+  const [selectedCatId, setSelectedCatId] = useState("");
+  const [targetHpp, setTargetHpp] = useState(8000);
+  const [simulationFactor, setSimulationFactor] = useState(1);
+  const [isOptimized, setIsOptimized] = useState(false);
+
+  // Standar gizi acuan program (Min & Max)
+  const NUTRITION_STANDARDS = {
+    1: { name: "Ibu Hamil", minCal: 750, maxCal: 850, minProt: 25, maxProt: 32 },
+    2: { name: "Ibu Menyusui", minCal: 750, maxCal: 850, minProt: 25, maxProt: 32 },
+    3: { name: "Balita", minCal: 300, maxCal: 400, minProt: 8, maxProt: 12 },
+    4: { name: "KB & TK", minCal: 350, maxCal: 450, minProt: 10, maxProt: 15 },
+    5: { name: "SD 1 - 3", minCal: 450, maxCal: 550, minProt: 12, maxProt: 18 },
+    6: { name: "SD 4 - 6", minCal: 500, maxCal: 600, minProt: 15, maxProt: 20 },
+    7: { name: "SMP", minCal: 600, maxCal: 700, minProt: 20, maxProt: 25 },
+    8: { name: "SMA/SMK", minCal: 700, maxCal: 800, minProt: 25, maxProt: 30 }
+  };
+
+  // Set default category jika belum dipilih
+  useEffect(() => {
+    if (categoryDetails && categoryDetails.length > 0 && !selectedCatId) {
+      setSelectedCatId(categoryDetails[0].category_id.toString());
+    }
+  }, [categoryDetails, selectedCatId]);
+
+  const activeCategory = categoryDetails.find(c => c.category_id.toString() === selectedCatId);
+  const standard = NUTRITION_STANDARDS[selectedCatId];
+
+  // Hitung data simulasi saat ini
+  const currentHpp = activeCategory ? parseFloat(activeCategory.hpp || 0) : 0;
+  const simulatedHpp = currentHpp * simulationFactor;
+
+  const currentCalories = activeCategory ? parseFloat(activeCategory.nutrition.total_calories || 0) : 0;
+  const simulatedCalories = currentCalories * simulationFactor;
+
+  const currentProtein = activeCategory ? parseFloat(activeCategory.nutrition.total_protein || 0) : 0;
+  const simulatedProtein = currentProtein * simulationFactor;
+
+  // Fitur Auto-Fit untuk mencocokkan target HPP (ambil batas aman 98% target)
+  const handleAutoFit = () => {
+    if (currentHpp > 0 && targetHpp > 0) {
+      const factor = (targetHpp * 0.98) / currentHpp;
+      setSimulationFactor(factor);
+      setIsOptimized(true);
+    }
+  };
+
+  const handleReset = () => {
+    setSimulationFactor(1);
+    setIsOptimized(false);
+  };
+
+  // Cek Status Keamanan Gizi
+  const isCaloriesSafe = standard ? (simulatedCalories >= standard.minCal && simulatedCalories <= standard.maxCal) : true;
+  const isProteinSafe = standard ? (simulatedProtein >= standard.minProt && simulatedProtein <= standard.maxProt) : true;
+
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-md border mb-6">
+      <div className="flex items-center justify-between border-b pb-4 mb-4">
+        <h3 className="text-lg font-bold text-gray-800 flex items-center">
+          <Calculator className="mr-3 text-intigizi-green" />
+          Kalkulator Simulasi & Optimasi HPP Target
+        </h3>
+        <span className="text-xs text-gray-500 font-medium">Bantu Dapur Pas Anggaran & Gizi</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Kolom Input Parameter */}
+        <div className="space-y-4 border-r pr-0 md:pr-6 border-gray-150">
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Kategori Sasaran</label>
+            <select
+              value={selectedCatId}
+              onChange={(e) => { setSelectedCatId(e.target.value); handleReset(); }}
+              className="input-style bg-white w-full text-xs font-semibold"
+            >
+              {categoryDetails.map((c) => (
+                <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Target HPP Maksimal (Rp)</label>
+            <input
+              type="number"
+              value={targetHpp}
+              onChange={(e) => setTargetHpp(Math.max(0, parseInt(e.target.value) || 0))}
+              className="input-style w-full text-xs font-semibold"
+              placeholder="Contoh: 8000"
+            />
+          </div>
+
+          <div className="flex space-x-2 pt-2">
+            <button
+              onClick={handleAutoFit}
+              disabled={currentHpp === 0}
+              className="btn-primary flex-1 text-xs py-2 px-3 flex items-center justify-center font-bold"
+            >
+              <Sparkles size={14} className="mr-1.5" /> Auto-Fit
+            </button>
+            <button
+              onClick={handleReset}
+              className="btn-secondary text-xs py-2 px-3 flex items-center justify-center font-bold"
+            >
+              <RefreshCw size={14} className="mr-1.5" /> Reset
+            </button>
+          </div>
+        </div>
+
+        {/* Kolom Status HPP & Indikator Gizi */}
+        <div className="space-y-4 border-r pr-0 md:pr-6 border-gray-150">
+          <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Hasil Simulasi HPP & Gizi</span>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 bg-gray-50 rounded-xl border">
+              <span className="text-[10px] font-bold text-gray-400 block uppercase">HPP Hasil Simulasi</span>
+              <span className={`text-lg font-black block mt-0.5 ${simulatedHpp > targetHpp ? 'text-red-600' : 'text-intigizi-green-dark'}`}>
+                {formatCurrency(simulatedHpp)}
+              </span>
+              <span className="text-[10px] text-gray-500 font-semibold block mt-0.5">
+                Target: {formatCurrency(targetHpp)}
+              </span>
+            </div>
+
+            <div className="p-3 bg-gray-50 rounded-xl border">
+              <span className="text-[10px] font-bold text-gray-400 block uppercase">Pemanfaatan Budget</span>
+              <span className="text-lg font-black block text-gray-800 mt-0.5">
+                {((simulatedHpp / (targetHpp || 1)) * 100).toFixed(1)}%
+              </span>
+              <span className="text-[10px] text-gray-500 font-semibold block mt-0.5">
+                Sisa: {formatCurrency(Math.max(0, targetHpp - simulatedHpp))}
+              </span>
+            </div>
+          </div>
+
+          {/* Indikator Peringatan Gizi */}
+          {standard && (
+            <div className="space-y-2 pt-1">
+              {/* Kalori */}
+              <div className="flex items-center justify-between text-xs p-2 rounded-lg border bg-white">
+                <div className="flex items-center">
+                  <Flame size={14} className="text-red-500 mr-2" />
+                  <span className="font-semibold text-gray-700">Energi (Kalori): {simulatedCalories.toFixed(1)} kcal</span>
+                </div>
+                {isCaloriesSafe ? (
+                  <span className="px-2 py-0.5 bg-green-100 text-green-700 font-bold rounded text-[9px] uppercase">Aman</span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 font-bold rounded text-[9px] uppercase flex items-center">
+                    <AlertTriangle size={10} className="mr-1" /> Tidak Ideal
+                  </span>
+                )}
+              </div>
+
+              {/* Protein */}
+              <div className="flex items-center justify-between text-xs p-2 rounded-lg border bg-white">
+                <div className="flex items-center">
+                  <Beef size={14} className="text-blue-500 mr-2" />
+                  <span className="font-semibold text-gray-700">Protein: {simulatedProtein.toFixed(1)} g</span>
+                </div>
+                {isProteinSafe ? (
+                  <span className="px-2 py-0.5 bg-green-100 text-green-700 font-bold rounded text-[9px] uppercase">Aman</span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 font-bold rounded text-[9px] uppercase flex items-center">
+                    <AlertTriangle size={10} className="mr-1" /> Tidak Ideal
+                  </span>
+                )}
+              </div>
+
+              {/* Peringatan Teks Gizi */}
+              {(!isCaloriesSafe || !isProteinSafe) && (
+                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[10px] text-amber-800 leading-relaxed">
+                  ⚠️ <b>Rekomendasi Gizi:</b> Porsi simulasi ini membuat nilai nutrisi menyimpang dari standar gizi sehat ({standard.name}: Kalori {standard.minCal}-{standard.maxCal} kcal, Protein {standard.minProt}-{standard.maxProt}g). Harap sesuaikan kembali.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Kolom Rekomendasi Gramasi Bahan Baru */}
+        <div className="space-y-3">
+          <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Rekomendasi Gramasi Bahan (1 Porsi)</span>
+          <div className="max-h-48 overflow-y-auto space-y-2 pr-1 text-xs">
+            {recipe.map((ing) => {
+              let originalPortion = 0;
+              try {
+                const portions = JSON.parse(ing.quantity_per_portion);
+                originalPortion = parseFloat(portions[selectedCatId] || 0);
+              } catch(e) {
+                originalPortion = 0;
+              }
+
+              if (originalPortion === 0) return null; // Abaikan jika porsi bahan 0
+
+              const simulatedPortion = originalPortion * simulationFactor;
+
+              return (
+                <div key={ing.id} className="flex justify-between items-center p-2 rounded-lg border bg-gray-50/50">
+                  <span className="font-medium text-gray-700 truncate mr-2">{ing.ingredient_name}</span>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-gray-400 line-through mr-2">{originalPortion.toLocaleString('id-ID')} {ing.base_unit_symbol}</span>
+                    <span className="font-bold text-intigizi-green-dark bg-green-50 px-1.5 py-0.5 rounded border border-green-100">
+                      {simulatedPortion.toFixed(1)} {ing.base_unit_symbol}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -323,6 +542,12 @@ function RecipeManagementPage() {
           </table>
         </div>
       </div>
+
+      <HPPOptimizer
+        recipe={processedRecipe}
+        categoryDetails={categoryDetails}
+        formatCurrency={formatCurrency}
+      />
 
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
