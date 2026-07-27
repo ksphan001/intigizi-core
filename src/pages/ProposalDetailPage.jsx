@@ -26,6 +26,7 @@ import {
   Edit,
   UserCheck,
   Leaf,
+  Printer,
 } from "lucide-react";
 import Modal from "../components/Modal.jsx";
 import ConfirmationModal from "../components/ConfirmationModal.jsx";
@@ -192,6 +193,129 @@ const DetailModal = ({ isOpen, onClose, date, item, calculation }) => {
   );
 };
 
+const PrintBudgetModal = ({ isOpen, onClose, calculation, schedule, proposal }) => {
+  if (!isOpen || !calculation || !proposal) return null;
+
+  // 1. Hitung jumlah hari penyajian untuk setiap menu_id
+  const menuDaysCount = {};
+  schedule.forEach(item => {
+    if (item.menu_id && item.menu_id !== 1 && !item.is_holiday) {
+      menuDaysCount[item.menu_id] = (menuDaysCount[item.menu_id] || 0) + 1;
+    }
+  });
+
+  // 2. Mengambil data penerima manfaat (PM) dari metadata proposal
+  const targetRecipients = proposal.target_recipients ? JSON.parse(proposal.target_recipients) : {};
+
+  // Formatter uang
+  const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  let grandTotal = 0;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Cetak Laporan Rencana Anggaran Menu" size="4xl">
+      <div className="space-y-6 print-container p-4" id="printable-budget-report">
+        {/* Style khusus cetak */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            #printable-budget-report, #printable-budget-report * {
+              visibility: visible;
+            }
+            #printable-budget-report {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+            .no-print {
+              display: none !important;
+            }
+          }
+        `}} />
+
+        {/* Header Laporan */}
+        <div className="text-center border-b pb-4">
+          <h2 className="text-2xl font-bold text-gray-800">LAPORAN RENCANA ANGGARAN BIAYA MENU</h2>
+          <p className="text-sm text-gray-500">Proposal Program: {proposal.proposal_code} — {proposal.title}</p>
+          <p className="text-xs text-gray-400 mt-1">Periode: {proposal.start_date} s/d {proposal.end_date}</p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 border text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left font-bold text-gray-700 border">Nama Menu / Masakan</th>
+                <th className="px-4 py-3 text-left font-bold text-gray-700 border">Kategori Sasaran</th>
+                <th className="px-4 py-3 text-right font-bold text-gray-700 border">Kebutuhan Anak (PM)</th>
+                <th className="px-4 py-3 text-right font-bold text-gray-700 border">Food Cost per Porsi</th>
+                <th className="px-4 py-3 text-right font-bold text-gray-700 border">Jumlah Hari</th>
+                <th className="px-4 py-3 text-right font-bold text-gray-700 border">Subtotal Anggaran</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {calculation.menu_details && calculation.menu_details.map((menu) => {
+                const days = menuDaysCount[menu.menu_id] || 0;
+                if (days === 0) return null; // Abaikan jika menu tidak pernah disajikan
+
+                return menu.details_per_category.map((detail, index) => {
+                  const pmCount = targetRecipients[detail.category_id] || 0;
+                  const hpp = detail.hpp || 0;
+                  const subtotal = hpp * pmCount * days;
+                  grandTotal += subtotal;
+
+                  return (
+                    <tr key={`${menu.menu_id}-${detail.category_id}`} className="hover:bg-gray-50">
+                      {index === 0 ? (
+                        <td className="px-4 py-3 font-semibold text-gray-900 border" rowSpan={menu.details_per_category.length}>
+                          {menu.menu_name}
+                        </td>
+                      ) : null}
+                      <td className="px-4 py-3 text-gray-700 border">{detail.category_name}</td>
+                      <td className="px-4 py-3 text-right text-gray-600 border">{pmCount.toLocaleString('id-ID')} anak</td>
+                      <td className="px-4 py-3 text-right text-gray-900 border">{formatCurrency(hpp)}</td>
+                      <td className="px-4 py-3 text-right text-gray-600 border">{days} hari</td>
+                      <td className="px-4 py-3 text-right font-semibold text-gray-900 border">{formatCurrency(subtotal)}</td>
+                    </tr>
+                  );
+                });
+              })}
+              {grandTotal === 0 && (
+                <tr>
+                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500 italic">Jadwalkan menu di kalender terlebih dahulu untuk menghitung anggaran.</td>
+                </tr>
+              )}
+            </tbody>
+            {grandTotal > 0 && (
+              <tfoot className="bg-gray-100 font-bold">
+                <tr>
+                  <td colSpan="5" className="px-4 py-3 text-right text-gray-700 border">TOTAL ANGGARAN MASAKAN</td>
+                  <td className="px-4 py-3 text-right text-lg text-green-700 border">{formatCurrency(grandTotal)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+
+        <div className="flex justify-end space-x-3 no-print mt-6 border-t pt-4">
+          <button onClick={onClose} className="btn-secondary">
+            Tutup
+          </button>
+          <button onClick={handlePrint} className="btn-primary flex items-center">
+            <Printer size={16} className="mr-2" /> Cetak Laporan (PDF)
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 function ProposalDetailPage() {
   const { proposalId } = useParams();
   const navigate = useNavigate();
@@ -211,6 +335,7 @@ function ProposalDetailPage() {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   const [confirmAction, setConfirmAction] = useState({
     action: null,
@@ -532,6 +657,14 @@ function ProposalDetailPage() {
           )}
         </div>
         <div className="flex space-x-2">
+          {proposal.status !== "Draft" && (
+            <button
+              onClick={() => setIsPrintModalOpen(true)}
+              className="btn-secondary flex items-center"
+            >
+              <Printer size={16} className="mr-2" /> Cetak Anggaran Menu
+            </button>
+          )}
           {isEditable && (
             <button
               onClick={() => setIsEditModalOpen(true)}
@@ -893,6 +1026,14 @@ function ProposalDetailPage() {
         date={viewingItem?.date}
         item={viewingItem}
         calculation={calculation}
+      />
+
+      <PrintBudgetModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        calculation={calculation}
+        schedule={schedule}
+        proposal={proposal}
       />
     </div>
   );
