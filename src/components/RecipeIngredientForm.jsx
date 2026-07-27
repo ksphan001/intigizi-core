@@ -3,7 +3,7 @@ import apiClient from '../services/api.js';
 import SearchableSelect from './SearchableSelect.jsx';
 
 // Formulir Resep yang dirombak total
-function RecipeIngredientForm({ onSave, onCancel, menuId, recipeItem }) {
+function RecipeIngredientForm({ onSave, onCancel, menuId, recipeItem, categoryDetails = [] }) {
   const [ingredientId, setIngredientId] = useState('');
   const [quantities, setQuantities] = useState({});
   const [allIngredients, setAllIngredients] = useState([]);
@@ -59,12 +59,12 @@ function RecipeIngredientForm({ onSave, onCancel, menuId, recipeItem }) {
       const data = {
         id: recipeItem?.id,
         menu_id: menuId,
-        ingredient_id: parseInt(ingredientId),
+        ingredient_id: ingredientId,
         quantity_per_portion: quantities // Kirim sebagai objek
       };
       await onSave(data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Gagal menyimpan data.');
+      setError(err.response?.data?.message || 'Gagal menyimpan bahan resep.');
     } finally {
       setLoading(false);
     }
@@ -124,6 +124,23 @@ function RecipeIngredientForm({ onSave, onCancel, menuId, recipeItem }) {
     return grossWeight * pricePerGram;
   };
 
+  // Hitung HPP lama dari bahan yang sedang diedit ini
+  const getOldIngredientHpp = (catId) => {
+    if (!recipeItem || !selectedIngredient) return 0;
+    
+    let oldQty = 0;
+    if (typeof recipeItem.quantity_per_portion === 'string') {
+      try {
+        const parsed = JSON.parse(recipeItem.quantity_per_portion);
+        oldQty = parseFloat(parsed[catId] || 0);
+      } catch (e) {}
+    } else if (recipeItem.quantity_per_portion) {
+      oldQty = parseFloat(recipeItem.quantity_per_portion[catId] || 0);
+    }
+    
+    return calculateIngredientHpp(oldQty, selectedIngredient);
+  };
+
   const handleApplyRecommended = (catId, catName) => {
     if (selectedIngredient) {
       const rec = getRecommendedGrammage(catName, selectedIngredient.name);
@@ -163,10 +180,27 @@ function RecipeIngredientForm({ onSave, onCancel, menuId, recipeItem }) {
               const recGram = getRecommendedGrammage(cat.name, selectedIngredient.name);
               const cost = calculateIngredientHpp(qty, selectedIngredient);
 
+              // Cari data budget HPP untuk kategori ini
+              const catDetail = categoryDetails.find(cd => cd.category_id.toString() === cat.id.toString());
+              const currentHpp = parseFloat(catDetail?.hpp || 0);
+              const maxHpp = parseFloat(catDetail?.max_hpp || 8000);
+              const oldHpp = getOldIngredientHpp(cat.id);
+
+              // Estimasi HPP total setelah bahan ini dimasukkan
+              const newTotalHpp = currentHpp - oldHpp + cost;
+              const isOverBudget = newTotalHpp > maxHpp;
+
               return (
-                <div key={cat.id} className="p-3 bg-white rounded-lg border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
+                <div key={cat.id} className={`p-3 bg-white rounded-lg border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm transition-colors duration-200 ${isOverBudget ? 'border-red-300 bg-red-50/20' : ''}`}>
                   <div className="flex-1">
-                    <span className="text-sm font-bold text-gray-700 block">{cat.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-gray-700">{cat.name}</span>
+                      {isOverBudget && (
+                        <span className="px-1.5 py-0.5 bg-red-100 text-red-700 font-extrabold text-[8px] uppercase rounded tracking-wider flex items-center">
+                          ⚠️ Melebihi Batas (Pagu: {formatCurrency(maxHpp)})
+                        </span>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={() => handleApplyRecommended(cat.id, cat.name)}
@@ -184,7 +218,7 @@ function RecipeIngredientForm({ onSave, onCancel, menuId, recipeItem }) {
                         id={`quantity-${cat.id}`}
                         value={qty}
                         onChange={(e) => handleQuantityChange(cat.id, e.target.value)}
-                        className="input-style w-28 text-xs font-semibold"
+                        className={`input-style w-28 text-xs font-semibold ${isOverBudget ? 'border-red-400 focus:ring-red-400 focus:border-red-400 text-red-600' : ''}`}
                         placeholder="Gram (g)"
                       />
                       <span className="absolute right-2.5 top-2 text-[10px] text-gray-400 font-bold">g</span>
@@ -192,7 +226,7 @@ function RecipeIngredientForm({ onSave, onCancel, menuId, recipeItem }) {
 
                     <div className="w-24 text-right">
                       <span className="text-[10px] text-gray-400 block uppercase font-bold">HPP Bahan</span>
-                      <span className={`text-xs font-bold ${cost > 0 ? 'text-intigizi-orange' : 'text-gray-400'}`}>
+                      <span className={`text-xs font-bold ${cost > 0 ? (isOverBudget ? 'text-red-600' : 'text-intigizi-orange') : 'text-gray-400'}`}>
                         {cost > 0 ? formatCurrency(cost) : 'Rp 0'}
                       </span>
                     </div>
