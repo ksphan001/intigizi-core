@@ -6,7 +6,7 @@ import Modal from '@/components/Modal.jsx';
 import SupplierForm from '@/components/SupplierForm.jsx';
 import ConfirmationModal from '@/components/ConfirmationModal.jsx';
 import Pagination from '@/components/Pagination.jsx';
-import { Edit, Trash2, Search, BookOpen, Truck, Loader2, Plus, MessageCircle } from 'lucide-react';
+import { Edit, Trash2, Search, BookOpen, Truck, Loader2, Plus, MessageCircle, Unlock, Link2 } from 'lucide-react';
 import { useNotification } from '@/context/NotificationContext';
 import SearchableSelect from '@/components/SearchableSelect.jsx';
 
@@ -156,6 +156,22 @@ function SuppliersPage() {
     fetchSuppliers();
   };
 
+  const handleToggleLocal = async (supplierId, action) => {
+    try {
+      setLoading(true);
+      const response = await apiClient.post('/supplier_toggle_local.php', {
+        supplier_id: supplierId,
+        action: action
+      });
+      showNotification(response.data.message, "success");
+      fetchSuppliers();
+    } catch (err) {
+      showNotification(err.response?.data?.message || "Gagal mengubah status supplier.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Catalog CRUD handlers
   const openCatalogModal = async (supplier) => {
     setCatalogSupplier(supplier);
@@ -297,9 +313,15 @@ function SuppliersPage() {
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-bold">{item.supplier_name}</span>
                         {item.marketplace_id ? (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                            Sentra IntiGizi
-                          </span>
+                          parseInt(item.is_local_override || 0) === 1 ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200" title="Koneksi sentra diputus sementara (dikelola lokal)">
+                              Sentra (Lokal)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              Sentra IntiGizi
+                            </span>
+                          )
                         ) : (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gray-100 text-gray-600 border border-gray-200">
                             Manual
@@ -366,11 +388,33 @@ function SuppliersPage() {
                         <BookOpen size={14} />
                         <span>Katalog</span>
                       </button>
-                      {!item.marketplace_id ? (
+
+                      {(!item.marketplace_id || parseInt(item.is_local_override || 0) === 1) ? (
                         <button onClick={() => openEditModal(item)} className="p-1.5 text-blue-600 hover:text-blue-800 border border-transparent hover:border-gray-200 rounded-lg transition-all" title="Edit Profil Supplier"><Edit size={16}/></button>
                       ) : (
-                        <span className="p-1.5 text-gray-300 cursor-not-allowed" title="Profil Supplier Marketplace Terpusat (Tidak Dapat Diedit Dapur)"><Edit size={16}/></span>
+                        <span className="p-1.5 text-gray-300 cursor-not-allowed" title="Profil Supplier Marketplace Terpusat (Jadikan lokal untuk mengedit)"><Edit size={16}/></span>
                       )}
+
+                      {item.marketplace_id && (
+                        parseInt(item.is_local_override || 0) === 1 ? (
+                          <button 
+                            onClick={() => handleToggleLocal(item.id, 'make_marketplace')} 
+                            className="p-1.5 text-amber-600 hover:text-amber-800 border border-transparent hover:border-gray-200 rounded-lg transition-all"
+                            title="Koneksikan Kembali ke Sentra IntiGizi"
+                          >
+                            <Link2 size={16} />
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => handleToggleLocal(item.id, 'make_local')} 
+                            className="p-1.5 text-amber-600 hover:text-amber-800 border border-transparent hover:border-gray-200 rounded-lg transition-all"
+                            title="Jadikan Supplier Lokal (Putuskan Koneksi)"
+                          >
+                            <Unlock size={16} />
+                          </button>
+                        )
+                      )}
+
                       <button 
                         onClick={() => openDeleteConfirm(item.id)} 
                         className="p-1.5 text-red-600 hover:text-red-800 border border-transparent hover:border-gray-200 rounded-lg transition-all" 
