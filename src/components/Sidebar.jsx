@@ -387,7 +387,7 @@ function Sidebar({ isOpen, setIsOpen }) {
                   <>
                     {renderLink("/app/admin/expense-categories", Wallet, "Kategori Biaya")}
                     {renderLink("/app/admin/beneficiary-categories", UserPlus, "Kategori Penerima")}
-                    {renderLink("/app/admin/master-ingredients", BookOpen, "Pustaka Bahan Baku")}
+                    {renderLink("/app/admin/master-ingredients", JournalIcon, "Pustaka Bahan Baku")}
                     {renderLink("/app/admin/backup-restore", Database, "Backup & Restore")}
                   </>
                 ))}
