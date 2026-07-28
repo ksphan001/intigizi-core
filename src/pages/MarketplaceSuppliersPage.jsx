@@ -13,17 +13,43 @@ function MarketplaceSuppliersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [connectingId, setConnectingId] = useState(null);
+  const [kitchenLocation, setKitchenLocation] = useState({ lat: null, lng: null });
+
+  // Haversine formula for distance calculation (km)
+  const getDistance = (lat1, lng1, lat2, lng2) => {
+    if (!lat1 || !lng1 || !lat2 || !lng2) return null;
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 100) / 100;
+  };
 
   // Detail & Reviews accordion state
   const [expandedSupplierId, setExpandedSupplierId] = useState(null);
   const [supplierDetails, setSupplierDetails] = useState({}); // Stores catalog + reviews for each supplier ID
   const [detailsLoading, setDetailsLoading] = useState({});
 
-  const fetchSuppliers = async (searchVal = '') => {
+  const fetchKitchenLocation = async () => {
+    try {
+      const res = await apiClient.get('/organization_get_settings.php');
+      const d = res.data;
+      if (d.latitude && d.longitude) {
+        setKitchenLocation({ lat: parseFloat(d.latitude), lng: parseFloat(d.longitude) });
+      }
+    } catch (err) {
+      console.warn('Gagal memuat koordinat dapur:', err);
+    }
+  };
+
+  const fetchSuppliers = async (searchVal = '', kLat = kitchenLocation.lat, kLng = kitchenLocation.lng) => {
     setLoading(true);
     try {
       const supplierApiBase = import.meta.env.VITE_SUPPLIER_API_URL || 'http://intigizi-supplier-api.test/app';
-      const url = `${supplierApiBase}/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
+      let url = `${supplierApiBase}/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
+      if (kLat && kLng) url += `&lat=${kLat}&lng=${kLng}`;
 
       const res = await fetch(url);
       const data = await res.json();
@@ -37,7 +63,23 @@ function MarketplaceSuppliersPage() {
   };
 
   useEffect(() => {
-    fetchSuppliers('');
+    const loadAll = async () => {
+      try {
+        const res = await apiClient.get('/organization_get_settings.php');
+        const d = res.data;
+        if (d.latitude && d.longitude) {
+          const kLat = parseFloat(d.latitude);
+          const kLng = parseFloat(d.longitude);
+          setKitchenLocation({ lat: kLat, lng: kLng });
+          fetchSuppliers('', kLat, kLng);
+        } else {
+          fetchSuppliers('');
+        }
+      } catch {
+        fetchSuppliers('');
+      }
+    };
+    loadAll();
   }, []);
 
   const handleSearchChange = (e) => {
@@ -163,6 +205,22 @@ function MarketplaceSuppliersPage() {
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 border border-blue-150 text-blue-700">
                         Proses Kemas: {parseFloat(sup.avg_process_time_hours || 0).toFixed(1)} jam
                       </span>
+                      {/* Badge jarak dari dapur */}
+                      {(() => {
+                        const dist = getDistance(kitchenLocation.lat, kitchenLocation.lng, parseFloat(sup.latitude), parseFloat(sup.longitude));
+                        if (dist === null) return null;
+                        const radius = parseFloat(sup.coverage_radius_km || 15);
+                        const outOfRange = dist > radius;
+                        return outOfRange ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 border border-red-200 text-red-700" title={`Supplier ini berada ${dist} km dari dapur Anda, melampaui radius layanan ${radius} km`}>
+                            ⚠️ Luar Jangkauan · {dist} km
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-50 border border-green-200 text-green-700">
+                            📍 {dist} km dari dapur
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     {/* Available matched ingredients snippet */}

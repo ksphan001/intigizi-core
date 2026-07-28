@@ -42,13 +42,32 @@ function SuppliersPage() {
   const [marketplaceSearch, setMarketplaceSearch] = useState('');
   const [connectingId, setConnectingId] = useState(null);
 
+  // Kitchen location for distance calculation
+  const [kitchenLocation, setKitchenLocation] = useState({ lat: null, lng: null });
+
   const { showNotification } = useNotification();
+
+  const fetchKitchenLocation = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/organization_get_settings.php');
+      const data = res.data;
+      // organization_get_settings returns latitude & longitude from main distribution_point JOIN
+      const lat = data.latitude || null;
+      const lng = data.longitude || null;
+      if (lat && lng) setKitchenLocation({ lat: parseFloat(lat), lng: parseFloat(lng) });
+    } catch (err) {
+      console.warn('Gagal memuat koordinat dapur utama:', err);
+    }
+  }, []);
 
   const fetchMarketplaceSuppliers = async (searchVal = '') => {
     setMarketplaceLoading(true);
     try {
       const supplierApiBase = import.meta.env.VITE_SUPPLIER_API_URL || 'http://intigizi-supplier-api.test/app';
-      const url = `${supplierApiBase}/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
+      let url = `${supplierApiBase}/marketplace_suppliers.php?search=${encodeURIComponent(searchVal)}`;
+      if (kitchenLocation.lat && kitchenLocation.lng) {
+        url += `&lat=${kitchenLocation.lat}&lng=${kitchenLocation.lng}`;
+      }
 
       const res = await fetch(url);
       const data = await res.json();
@@ -106,7 +125,8 @@ function SuppliersPage() {
 
   useEffect(() => {
     fetchSuppliers();
-  }, [fetchSuppliers]);
+    fetchKitchenLocation();
+  }, [fetchSuppliers, fetchKitchenLocation]);
 
   const filteredSuppliers = useMemo(() => {
     if (!searchQuery) {
@@ -353,10 +373,25 @@ function SuppliersPage() {
                       <div className="text-xs text-gray-400">
                         {(!item.coverage_area_desc || item.coverage_area_desc === '0') ? 'Semua Wilayah' : item.coverage_area_desc}
                       </div>
-                      {item.latitude && item.longitude && (
-                        <div className="text-[10px] text-gray-400 font-mono mt-1">
-                          GPS: {item.latitude}, {item.longitude}
+                      {/* Jarak dari Dapur Utama */}
+                      {item.distance_km !== null && item.distance_km !== undefined ? (
+                        <div className="mt-1 flex items-center gap-1 flex-wrap">
+                          {parseInt(item.is_out_of_range) === 1 ? (
+                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-50 text-red-700 border border-red-200" title="Supplier ini berada di luar radius layanannya dari dapur Anda">
+                              ⚠️ Luar Jangkauan · {item.distance_km} km
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold bg-green-50 text-green-700 border border-green-200">
+                              ✓ {item.distance_km} km dari dapur
+                            </span>
+                          )}
                         </div>
+                      ) : (
+                        item.latitude && item.longitude && (
+                          <div className="text-[10px] text-gray-400 font-mono mt-1">
+                            GPS: {item.latitude}, {item.longitude}
+                          </div>
+                        )
                       )}
                     </td>
                     <td className="px-6 py-4 text-xs font-medium text-gray-800">
