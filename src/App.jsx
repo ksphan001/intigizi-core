@@ -90,6 +90,7 @@ import SubscriptionHistoryPage from './pages/SuperAdmin/SubscriptionHistoryPage.
 // --- RUTE BARU ---
 import InvestmentVerificationPage from './pages/SuperAdmin/InvestmentVerificationPage.jsx';
 import BackupRestorePage from './pages/SuperAdmin/BackupRestorePage.jsx';
+import MasterIngredientsPage from './pages/SuperAdmin/MasterIngredientsPage.jsx';
 
 // Halaman Vendor & Supplier
 import VendorDashboardPage from './pages/Vendor/DashboardPage.jsx';
@@ -205,6 +206,7 @@ function App() {
           {/* --- RUTE BARU DITAMBAHKAN --- */}
           <Route path="admin/investment-verification" element={<InvestmentVerificationPage />} />
           <Route path="admin/backup-restore" element={<BackupRestorePage />} />
+          <Route path="admin/master-ingredients" element={<MasterIngredientsPage />} />
 
           <Route path="vendor/dashboard" element={<VendorDashboardPage />} />
           <Route path="vendor/profile" element={<VendorProfilePage />} />

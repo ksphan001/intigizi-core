@@ -112,7 +112,8 @@ function Sidebar({ isOpen, setIsOpen }) {
     } else if (
       path.includes("/app/admin/vendor-categories") ||
       path.includes("/app/admin/expense-categories") ||
-      path.includes("/app/admin/beneficiary-categories")
+      path.includes("/app/admin/beneficiary-categories") ||
+      path.includes("/app/admin/master-ingredients")
     ) {
       setActiveCategory("konfigurasi");
     }
@@ -386,6 +387,7 @@ function Sidebar({ isOpen, setIsOpen }) {
                   <>
                     {renderLink("/app/admin/expense-categories", Wallet, "Kategori Biaya")}
                     {renderLink("/app/admin/beneficiary-categories", UserPlus, "Kategori Penerima")}
+                    {renderLink("/app/admin/master-ingredients", BookOpen, "Pustaka Bahan Baku")}
                     {renderLink("/app/admin/backup-restore", Database, "Backup & Restore")}
                   </>
                 ))}
